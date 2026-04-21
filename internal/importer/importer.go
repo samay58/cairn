@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/samay58/cairn/internal/cards"
@@ -93,20 +94,34 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	}
 
 	// Media scan inside the same transaction.
-	mediaDir := filepath.Join(exportDir, "media")
-	if _, err := os.Stat(mediaDir); err == nil {
-		items, scanErr := ScanMedia(mediaDir)
-		if scanErr != nil {
-			r.Warnings = append(r.Warnings, fmt.Sprintf("media scan: %v", scanErr))
+	// Honor the old media/ subfolder layout if present; otherwise walk the root.
+	mediaRoot := filepath.Join(exportDir, "media")
+	if _, err := os.Stat(mediaRoot); os.IsNotExist(err) {
+		mediaRoot = exportDir
+	}
+	items, scanErr := ScanMedia(mediaRoot)
+	if scanErr != nil {
+		r.Warnings = append(r.Warnings, fmt.Sprintf("media scan: %v", scanErr))
+	}
+	for _, it := range items {
+		if filepath.Base(it.Path) == "cards.csv" {
+			continue
 		}
-		for _, it := range items {
-			if _, err := tx.Exec(`INSERT INTO media(card_id, kind, path, sha256, mime) VALUES ('', 'image', ?, ?, ?)`,
-				it.Path, it.SHA256, it.Mime); err != nil {
-				r.Warnings = append(r.Warnings, fmt.Sprintf("media insert %s: %v", it.Path, err))
-				continue
-			}
-			r.MediaCount++
+		mediaKind := "other"
+		switch {
+		case strings.HasPrefix(it.Mime, "image/"):
+			mediaKind = "image"
+		case strings.HasPrefix(it.Mime, "video/"):
+			mediaKind = "video"
+		case it.Mime == "application/pdf":
+			mediaKind = "document"
 		}
+		if _, err := tx.Exec(`INSERT INTO media(card_id, kind, path, sha256, mime) VALUES ('', ?, ?, ?, ?)`,
+			mediaKind, it.Path, it.SHA256, it.Mime); err != nil {
+			r.Warnings = append(r.Warnings, fmt.Sprintf("media insert %s: %v", it.Path, err))
+			continue
+		}
+		r.MediaCount++
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -54,10 +54,15 @@ func ParseCardsCSV(path string) ([]cards.Card, []string, error) {
 	return out, warnings, nil
 }
 
+// utf8BOM is the UTF-8 byte order mark that some exporters (including MyMind)
+// prepend to the first line of CSV files.
+const utf8BOM = "\xef\xbb\xbf"
+
 func normalizeHeader(h []string) map[string]int {
 	idx := map[string]int{}
 	for i, name := range h {
-		idx[strings.ToLower(strings.TrimSpace(name))] = i
+		clean := strings.TrimPrefix(strings.TrimSpace(name), utf8BOM)
+		idx[strings.ToLower(clean)] = i
 	}
 	return idx
 }
@@ -71,18 +76,39 @@ func pick(cols map[string]int, row []string, names ...string) string {
 	return ""
 }
 
+// kindAliases maps MyMind type values (lowercased, no spaces) to cairn Kind.
+var kindAliases = map[string]cards.Kind{
+	"article":      cards.KindArticle,
+	"webpage":      cards.KindArticle,
+	"document":     cards.KindArticle,
+	"embed":        cards.KindArticle,
+	"youtubevideo": cards.KindArticle,
+	"link":         cards.KindArticle,
+	"image":        cards.KindImage,
+	"photo":        cards.KindImage,
+	"quote":        cards.KindQuote,
+	"note":         cards.KindNote,
+}
+
 func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 	id := pick(cols, row, "id", "mymind_id", "card_id")
 	kindRaw := pick(cols, row, "type", "kind")
 	title := pick(cols, row, "title")
-	if id == "" || kindRaw == "" || title == "" {
-		return cards.Card{}, false, "missing id/type/title"
+	if id == "" || kindRaw == "" {
+		return cards.Card{}, false, "missing id/type"
 	}
-	kind, err := cards.KindFromString(strings.ToLower(kindRaw))
+
+	kindLower := strings.ToLower(strings.ReplaceAll(kindRaw, " ", ""))
+	kind, err := cards.KindFromString(kindLower)
 	if err != nil {
-		return cards.Card{}, false, fmt.Sprintf("unknown kind %q", kindRaw)
+		if k, ok := kindAliases[kindLower]; ok {
+			kind = k
+		} else {
+			return cards.Card{}, false, fmt.Sprintf("unknown kind %q", kindRaw)
+		}
 	}
-	captured := pick(cols, row, "captured_at", "created_at", "date")
+
+	captured := pick(cols, row, "captured_at", "created_at", "created", "date")
 	capturedAt, err := time.Parse(time.RFC3339, captured)
 	if err != nil {
 		capturedAt = time.Now().UTC()
@@ -94,19 +120,31 @@ func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 		if !strings.Contains(tagsRaw, ";") {
 			splitter = ","
 		}
+		seen := map[string]bool{}
 		for _, t := range strings.Split(tagsRaw, splitter) {
-			if t = strings.TrimSpace(t); t != "" {
+			if t = strings.TrimSpace(t); t != "" && !seen[t] {
+				seen[t] = true
 				tags = append(tags, t)
 			}
 		}
 	}
+
+	body := pick(cols, row, "body", "text", "content")
+	note := pick(cols, row, "note")
+	switch {
+	case body == "" && note != "":
+		body = note
+	case body != "" && note != "":
+		body = body + "\n\nNote: " + note
+	}
+
 	return cards.Card{
 		ID:         id,
 		MyMindID:   id,
 		Kind:       kind,
 		Title:      title,
 		URL:        pick(cols, row, "url", "link"),
-		Body:       pick(cols, row, "body", "text", "content"),
+		Body:       body,
 		Excerpt:    pick(cols, row, "excerpt", "description"),
 		Source:     pick(cols, row, "source", "domain"),
 		Tags:       tags,
