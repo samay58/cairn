@@ -59,7 +59,7 @@ func TestCollisionSuffixNoCollision(t *testing.T) {
 	}
 }
 
-func TestMediaPath(t *testing.T) {
+func TestMediaRelPath(t *testing.T) {
 	got := MediaRelPath("3f5abc0000000000000000000000000000000000000000000000000000000000", "pdf")
 	want := "_media/3f/5a/3f5abc0000000000000000000000000000000000000000000000000000000000.pdf"
 	if got != want {
@@ -67,9 +67,9 @@ func TestMediaPath(t *testing.T) {
 	}
 }
 
-func TestRelMediaLinkFromCard(t *testing.T) {
-	got := RelMediaLink("_media/3f/5a/3f5a.pdf")
-	want := "_media/3f/5a/3f5a.pdf"
+func TestMediaRelPathShortSha(t *testing.T) {
+	got := MediaRelPath("abc", "png")
+	want := "_media/abc.png"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}

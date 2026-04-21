@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -252,26 +253,13 @@ func TestImportWarnsOnOrphanMedia(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var any bool
+	var found bool
 	for _, w := range r.Warnings {
-		if containsAny(w, "orphan", "no matching card") {
-			any = true
+		if strings.Contains(w, "orphan") {
+			found = true
 		}
 	}
-	if !any {
+	if !found {
 		t.Fatalf("expected warning about orphan.pdf, got %v", r.Warnings)
 	}
-}
-
-func containsAny(s string, subs ...string) bool {
-	for _, sub := range subs {
-		if len(sub) > 0 && len(s) >= len(sub) {
-			for i := 0; i+len(sub) <= len(s); i++ {
-				if s[i:i+len(sub)] == sub {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }

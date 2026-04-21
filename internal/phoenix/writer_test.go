@@ -56,8 +56,6 @@ func TestWriterDryRunWritesNothing(t *testing.T) {
 	if len(entries) != 0 {
 		t.Errorf("dry-run wrote %d entries, want 0", len(entries))
 	}
-	_ = bytes.Buffer{}
-	_ = filepath.Join
 }
 
 func TestWriterWritesCardMarkdown(t *testing.T) {

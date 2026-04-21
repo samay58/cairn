@@ -46,16 +46,12 @@ func UniqueFilename(base string, exists func(string) bool) string {
 	}
 }
 
-func MediaRelPath(sha string, ext string) string {
+// MediaRelPath returns the vault-relative destination for an attachment,
+// fanned out by the first four hex chars of the sha to keep `_media/`
+// indexable as the vault grows.
+func MediaRelPath(sha, ext string) string {
 	if len(sha) < 4 {
 		return fmt.Sprintf("_media/%s.%s", sha, ext)
 	}
 	return fmt.Sprintf("_media/%s/%s/%s.%s", sha[:2], sha[2:4], sha, ext)
-}
-
-// RelMediaLink returns the card-relative link for a stored media path. Cards
-// live at the vault root alongside `_media/`, so the link equals the stored
-// path.
-func RelMediaLink(relPath string) string {
-	return relPath
 }

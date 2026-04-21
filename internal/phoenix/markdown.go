@@ -31,7 +31,7 @@ func RenderMarkdown(c cards.Card, media []MediaRef) string {
 	b.WriteString(c.CapturedAt.UTC().Format(time.RFC3339))
 	b.WriteString("\n")
 	b.WriteString("kind: ")
-	b.WriteString(kindName(c.Kind))
+	b.WriteString(string(c.Kind))
 	b.WriteString("\n---\n\n")
 
 	b.WriteString("# ")
@@ -65,17 +65,3 @@ func encodeTags(tags []string) string {
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
-func kindName(k cards.Kind) string {
-	switch k {
-	case cards.KindArticle:
-		return "article"
-	case cards.KindImage:
-		return "image"
-	case cards.KindQuote:
-		return "quote"
-	case cards.KindNote:
-		return "note"
-	default:
-		return string(k)
-	}
-}
