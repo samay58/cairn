@@ -1,0 +1,17 @@
+Per-client MCP permissions
+
+  claude-code
+    search_mind           allow
+    get_related           allow
+    get_card              prompt (include_full_text=true)
+    create_context_pack   allow
+    save_to_mind          deny
+
+  claude-desktop
+    search_mind           allow
+    get_related           allow
+    get_card              prompt (include_full_text=true)
+    create_context_pack   allow
+    save_to_mind          deny
+
+Phase 0: values are the privacy-first defaults. Edit ~/.cairn/config.toml in Phase 3 to change them.
