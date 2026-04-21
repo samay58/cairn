@@ -39,3 +39,38 @@ func TestDailyFilenameTruncatesLongSlugs(t *testing.T) {
 		t.Fatalf("filename too long: %q (%d)", got, len(got))
 	}
 }
+
+func TestCollisionSuffix(t *testing.T) {
+	exists := map[string]bool{
+		"2026-04-20-hello.md":   true,
+		"2026-04-20-hello-2.md": true,
+	}
+	got := UniqueFilename("2026-04-20-hello.md", func(name string) bool { return exists[name] })
+	want := "2026-04-20-hello-3.md"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestCollisionSuffixNoCollision(t *testing.T) {
+	got := UniqueFilename("x.md", func(string) bool { return false })
+	if got != "x.md" {
+		t.Fatalf("got %q, want x.md", got)
+	}
+}
+
+func TestMediaPath(t *testing.T) {
+	got := MediaRelPath("3f5abc0000000000000000000000000000000000000000000000000000000000", "pdf")
+	want := "_media/3f/5a/3f5abc0000000000000000000000000000000000000000000000000000000000.pdf"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestRelMediaLinkFromCard(t *testing.T) {
+	got := RelMediaLink("_media/3f/5a/3f5a.pdf")
+	want := "_media/3f/5a/3f5a.pdf"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
