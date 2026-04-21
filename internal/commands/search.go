@@ -27,7 +27,7 @@ func newSearchCmd(src source.Source) *cobra.Command {
 			}
 
 			query := strings.Join(args, " ")
-			matches := applyLimit(fakeSearch(src, query), limit)
+			matches := src.Search(query, source.Filters{}, limit)
 
 			out := cmd.OutOrStdout()
 			switch mode {
@@ -46,26 +46,6 @@ func newSearchCmd(src source.Source) *cobra.Command {
 	}
 	addListFlags(cmd)
 	return cmd
-}
-
-func fakeSearch(src source.Source, query string) []render.Match {
-	q := strings.ToLower(strings.TrimSpace(query))
-	all := src.All()
-	switch q {
-	case "oauth":
-		return []render.Match{
-			{Card: all[0], WhyShown: "Matched on title and tag oauth."},
-			{Card: all[10], WhyShown: "Matched on tag auth."},
-			{Card: all[17], WhyShown: "Matched on body."},
-		}
-	case "zzz-empty":
-		return nil
-	}
-	return []render.Match{
-		{Card: all[0], WhyShown: "Demo result 1."},
-		{Card: all[1], WhyShown: "Demo result 2."},
-		{Card: all[2], WhyShown: "Demo result 3."},
-	}
 }
 
 func writeNoResults(out io.Writer, query string) error {
