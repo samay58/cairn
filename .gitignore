@@ -1,0 +1,14 @@
+# Go
+*.test
+*.out
+/dist/
+/build/
+
+# Editor
+.idea/
+.vscode/
+.DS_Store
+
+# Cairn runtime (lives in ~/.cairn, not here, but guard anyway)
+/cairn
+/cairn.db
