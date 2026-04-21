@@ -1,0 +1,8 @@
+Reading export from /tmp/mymind-export-2026-04-19/
+Found cards.csv · 25 rows · media folder with 9 files
+Parsing 25 cards         done
+Extracting 9 media files done
+Indexing 63 chunks       done
+
+Imported 25 cards (0 updated, 0 deleted). Database now at ~/.cairn/cairn.db.
+Run `cairn search "<query>"` or `cairn find`.
