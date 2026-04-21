@@ -19,6 +19,11 @@ func newSearchCmd() *cobra.Command {
 			query := strings.Join(args, " ")
 			matches := fakeSearch(query)
 
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit > 0 && limit < len(matches) {
+				matches = matches[:limit]
+			}
+
 			asJSON, _ := cmd.Flags().GetBool("json")
 			asJSONL, _ := cmd.Flags().GetBool("jsonl")
 

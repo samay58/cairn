@@ -29,6 +29,17 @@ func TestSearchOAuthJSON(t *testing.T) {
 	golden.Assert(t, "search_oauth.json", out.String())
 }
 
+func TestSearchWithLimit(t *testing.T) {
+	root := NewRoot()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"search", "oauth", "--limit", "2"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	golden.Assert(t, "search_oauth_limit2.txt", out.String())
+}
+
 func TestSearchEmpty(t *testing.T) {
 	root := NewRoot()
 	var out bytes.Buffer

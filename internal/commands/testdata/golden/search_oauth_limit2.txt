@@ -1,0 +1,9 @@
+@1  OAuth 2.0 Device Authorization Grant
+    a · datatracker.ietf.org · 2026-03-14
+    matched on title and tag oauth
+    Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.
+
+@2  Proof Key for Code Exchange (PKCE)
+    a · oauth.net · 2026-03-27
+    matched on tag auth
+    PKCE protects public OAuth 2.0 clients from authorization code interception attacks by binding the token request to the original authorization request via a code verifier and challenge.
