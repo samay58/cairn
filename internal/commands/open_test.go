@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/samay58/cairn/internal/golden"
@@ -20,4 +21,18 @@ func TestOpenByHandle(t *testing.T) {
 		t.Fatal(err)
 	}
 	golden.Assert(t, "open_at1.txt", out.String())
+}
+
+func TestOpenReturnsErrorWhenBrowserLaunchFails(t *testing.T) {
+	t.Setenv("PATH", "")
+
+	root := NewRootWithSource(source.NewFixtureSource())
+	root.SetArgs([]string{"open", "@1"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected open error")
+	}
+	if !strings.Contains(err.Error(), "open card: launch browser:") {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }

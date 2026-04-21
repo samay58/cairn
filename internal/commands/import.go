@@ -3,7 +3,6 @@ package commands
 import (
 	"database/sql"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -22,36 +21,43 @@ func newImportCmd() *cobra.Command {
 			out := cmd.OutOrStdout()
 			errOut := cmd.ErrOrStderr()
 			exportDir := args[0]
+			dbPath := cairnDBPath()
+			state := readSyncState(dbPath)
 
 			if _, err := os.Stat(exportDir); err != nil {
-				return writeImportNotFound(out, exportDir)
+				return formatImportError("read export directory", err, state)
 			}
 
-			dbPath := cairnDBPath()
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-				return err
+				return formatImportError("create cairn home", err, state)
 			}
 			db, err := sql.Open("sqlite", dbPath)
 			if err != nil {
-				return err
+				return formatImportError("open database", err, state)
 			}
 			defer db.Close()
 			if err := sqlite.Migrate(db); err != nil {
-				return err
+				return formatImportError("migrate database", err, state)
 			}
 
 			fmt.Fprintf(out, "Reading export from %s\n", exportDir)
 			result, err := importer.Import(db, exportDir)
 			if err != nil {
-				fmt.Fprintln(out, "Error: import failed.")
-				fmt.Fprintln(out)
-				fmt.Fprintf(out, "%v\n", err)
-				return nil
+				return formatImportError("ingest export", err, readSyncState(dbPath))
 			}
 			fmt.Fprintf(out, "Parsed %d cards; %d inserted, %d updated, %d tombstoned.\n",
 				result.Inserted+result.Updated, result.Inserted, result.Updated, result.Tombstoned)
-			fmt.Fprintf(out, "Media: %d files. Chunks: %d.\n\n", result.MediaCount, result.ChunkCount)
-			fmt.Fprintf(out, "Database at %s.\n", dbPath)
+			fmt.Fprintf(out, "Media: %d files. Chunks: %d.\n", result.MediaCount, result.ChunkCount)
+			switch {
+			case result.SkippedRows > 0:
+				fmt.Fprintf(out, "Warnings: %d rows skipped; details on stderr.\n", result.SkippedRows)
+			case len(result.Warnings) > 0:
+				fmt.Fprintf(out, "Warnings: %d issues; details on stderr.\n", len(result.Warnings))
+			}
+			fmt.Fprintln(out)
+			if err := writeDatabaseLocation(out, dbPath); err != nil {
+				return err
+			}
 			fmt.Fprintln(out, "Run `cairn search \"<query>\"` or `cairn find`.")
 			for _, w := range result.Warnings {
 				fmt.Fprintf(errOut, "warning: %s\n", w)
@@ -59,19 +65,4 @@ func newImportCmd() *cobra.Command {
 			return nil
 		},
 	}
-}
-
-func writeImportNotFound(out io.Writer, path string) error {
-	lines := []string{
-		"Error: import failed.",
-		"",
-		fmt.Sprintf("Could not read export directory: %s", path),
-		"Check the path and try again.",
-	}
-	for _, line := range lines {
-		if _, err := fmt.Fprintln(out, line); err != nil {
-			return err
-		}
-	}
-	return nil
 }

@@ -1,4 +1,4 @@
 No cards matched "zzz-empty".
 
-Try a broader query, drop filters, or check `cairn status` to confirm the import
-is fresh.
+Try broader terms, remove type:, from:, since:, or #tag filters, or check `cairn
+status`.

@@ -34,6 +34,18 @@ func seed(t *testing.T) *sql.DB {
 	if _, err := db.Exec(`INSERT INTO tags(card_id, tag) VALUES ('c_1','focus'), ('c_1','productivity')`); err != nil {
 		t.Fatal(err)
 	}
+	var c1RowID int64
+	if err := db.QueryRow(`SELECT rowid FROM cards WHERE id = 'c_1'`).Scan(&c1RowID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO cards_fts(cards_fts, rowid, title, body, tags_flat) VALUES ('delete', ?, ?, ?, '')`,
+		c1RowID, "Deep Work", "Rules for focused success."); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO cards_fts(rowid, title, body, tags_flat) VALUES (?, ?, ?, ?)`,
+		c1RowID, "Deep Work", "Rules for focused success.", "focus productivity"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.Exec(`INSERT INTO sync_log(started_at, finished_at, delta_count, status) VALUES (?,?,2,'ok')`, now, now); err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +131,19 @@ func TestSQLiteSourceSearchLimit(t *testing.T) {
 	}
 }
 
+func TestSQLiteSourceSearchTagWhyShown(t *testing.T) {
+	db := seed(t)
+	defer db.Close()
+	s := &SQLiteSource{DB: db}
+	matches := s.Search("productivity", source.Filters{}, 0)
+	if len(matches) != 1 {
+		t.Fatalf("expected one tag match, got %d", len(matches))
+	}
+	if matches[0].WhyShown != "Matched on tag productivity." {
+		t.Fatalf("why shown = %q", matches[0].WhyShown)
+	}
+}
+
 func TestSQLiteSourceHandlesRoundTrip(t *testing.T) {
 	db := seed(t)
 	defer db.Close()
@@ -149,5 +174,47 @@ func TestSQLiteSourceHandlesRoundTrip(t *testing.T) {
 	}
 	if _, err := s.ByHandle(2); err == nil {
 		t.Error("after single-item save, @2 should error")
+	}
+}
+
+func TestSQLiteSourceByHandleIncludesTags(t *testing.T) {
+	db := seed(t)
+	defer db.Close()
+	s := &SQLiteSource{DB: db}
+
+	if err := s.LastListSave([]render.Match{{Card: cards.Card{ID: "c_1"}}}); err != nil {
+		t.Fatal(err)
+	}
+	card, err := s.ByHandle(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(card.Tags) != 2 {
+		t.Fatalf("tags = %v, want 2 tags", card.Tags)
+	}
+}
+
+func TestOpenSetsDesktopPragmas(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	var journal string
+	if err := s.DB.QueryRow(`PRAGMA journal_mode`).Scan(&journal); err != nil {
+		t.Fatal(err)
+	}
+	if journal != "wal" {
+		t.Fatalf("journal_mode = %q, want wal", journal)
+	}
+
+	var synchronous int
+	if err := s.DB.QueryRow(`PRAGMA synchronous`).Scan(&synchronous); err != nil {
+		t.Fatal(err)
+	}
+	if synchronous != 1 {
+		t.Fatalf("synchronous = %d, want 1 (NORMAL)", synchronous)
 	}
 }

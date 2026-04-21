@@ -58,3 +58,20 @@ func TestPackEscapesXMLQuery(t *testing.T) {
 		t.Fatalf("expected escaped xml query, got:\n%s", out.String())
 	}
 }
+
+func TestPackUsesFixturesAfterRealImport(t *testing.T) {
+	t.Setenv("CAIRN_HOME", t.TempDir())
+	importSampleHelper(t)
+
+	root, err := buildRootForCurrentDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"pack", "oauth device flow", "--for", "claude"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	golden.Assert(t, "pack_claude.txt", out.String())
+}

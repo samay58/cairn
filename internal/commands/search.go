@@ -55,7 +55,8 @@ func writeNoResults(out io.Writer, query string) error {
 	if _, err := fmt.Fprintf(out, "No cards matched %q.\n\n", query); err != nil {
 		return err
 	}
-	for _, line := range render.WrapLines("", "Try a broader query, drop filters, or check `cairn status` to confirm the import is fresh.", render.DefaultWidth) {
+	text := "Try broader terms, remove type:, from:, since:, or #tag filters, or check `cairn status`."
+	for _, line := range render.WrapLines("", text, render.DefaultWidth) {
 		if _, err := fmt.Fprintf(out, "%s\n", line); err != nil {
 			return err
 		}

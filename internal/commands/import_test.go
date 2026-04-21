@@ -33,7 +33,9 @@ func TestImportSampleExport(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	outStr := strings.ReplaceAll(out.String(), tmp, "<TMP>")
+	dbPath := filepath.Join(tmp, "cairn.db")
+	outStr := strings.ReplaceAll(out.String(), dbPath, "<TMP>/cairn.db")
+	outStr = strings.ReplaceAll(outStr, strings.Join(wrapFilesystemPath("  ", dbPath, 80), "\n"), "  <TMP>/cairn.db")
 	golden.Assert(t, "import_ok_phase1.txt", outStr)
 
 	// Confirm the DB was actually created.
@@ -46,12 +48,29 @@ func TestImportNotFound(t *testing.T) {
 	t.Setenv("CAIRN_HOME", t.TempDir())
 
 	root := NewRootWithSource(source.NewFixtureSource())
+	root.SetArgs([]string{"import", "/tmp/does-not-exist-x9z9z"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected import error")
+	}
+	golden.Assert(t, "import_err_notfound_phase1.txt", err.Error()+"\n")
+}
+
+func TestImportSampleExportLongHomeFitsWidth(t *testing.T) {
+	base := t.TempDir()
+	longHome := filepath.Join(base,
+		"phase-one-review",
+		"long-output-contract-check",
+		"nested-home-for-cairn",
+		"library-state")
+	t.Setenv("CAIRN_HOME", longHome)
+
+	root := NewRootWithSource(source.NewFixtureSource())
 	var out bytes.Buffer
 	root.SetOut(&out)
-	root.SetErr(&out)
-	root.SetArgs([]string{"import", "/tmp/does-not-exist-x9z9z"})
+	root.SetArgs([]string{"import", filepath.Join("..", "..", "testdata", "mymind_sample_export")})
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	golden.Assert(t, "import_err_notfound_phase1.txt", out.String())
+	assertFitsDefaultWidth(t, out.String())
 }

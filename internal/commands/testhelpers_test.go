@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"path/filepath"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/samay58/cairn/internal/source"
 	"github.com/spf13/cobra"
@@ -31,4 +32,13 @@ func buildRootForCurrentDB() (*cobra.Command, error) {
 		return nil, err
 	}
 	return NewRootWithSource(src), nil
+}
+
+func assertFitsDefaultWidth(t *testing.T, text string) {
+	t.Helper()
+	for i, line := range bytes.Split([]byte(text), []byte("\n")) {
+		if utf8.RuneCount(line) > 80 {
+			t.Fatalf("line %d exceeds 80 columns: %q", i+1, string(line))
+		}
+	}
 }

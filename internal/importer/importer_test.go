@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samay58/cairn/internal/source"
 	"github.com/samay58/cairn/internal/storage/sqlite"
 	_ "modernc.org/sqlite"
 )
@@ -90,6 +91,11 @@ func TestImportTombstonesMissingCards(t *testing.T) {
 	if r.Tombstoned != 3 {
 		t.Errorf("tombstoned %d, want 3 (mm_2, mm_3, mm_4)", r.Tombstoned)
 	}
+
+	s := &sqlite.SQLiteSource{DB: db}
+	if got := s.Search("craft", source.Filters{}, 0); len(got) != 0 {
+		t.Fatalf("tombstoned card still searchable: %+v", got)
+	}
 }
 
 func TestImportHardDeletesAfter30Days(t *testing.T) {
@@ -119,6 +125,81 @@ func TestImportMissingDirReturnsError(t *testing.T) {
 	defer db.Close()
 	if _, err := Import(db, "/tmp/does-not-exist-xyz"); err == nil {
 		t.Error("expected error for missing dir")
+	}
+}
+
+func TestImportSecondRunIsNoOp(t *testing.T) {
+	db := mustOpen(t)
+	defer db.Close()
+
+	if _, err := Import(db, filepath.Join("..", "..", "testdata", "mymind_sample_export")); err != nil {
+		t.Fatal(err)
+	}
+	result, err := Import(db, filepath.Join("..", "..", "testdata", "mymind_sample_export"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Inserted != 0 || result.Updated != 0 || result.Tombstoned != 0 {
+		t.Fatalf("second import = %+v, want no-op counts", result)
+	}
+
+	var mediaCount int
+	if err := db.QueryRow(`SELECT count(*) FROM media`).Scan(&mediaCount); err != nil {
+		t.Fatal(err)
+	}
+	if mediaCount != 1 {
+		t.Fatalf("media count = %d, want 1", mediaCount)
+	}
+}
+
+func TestImportDuplicateMyMindIDFails(t *testing.T) {
+	db := mustOpen(t)
+	defer db.Close()
+
+	tmp := t.TempDir()
+	body := "id,type,title,url,content,note,tags,created\n" +
+		"mm_1,Article,One,,Body,,tag,2026-04-01T00:00:00Z\n" +
+		"mm_1,Article,Two,,Body,,tag,2026-04-01T00:00:00Z\n"
+	if err := writeFile(filepath.Join(tmp, "cards.csv"), body); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Import(db, tmp); err == nil {
+		t.Fatal("expected duplicate id error")
+	}
+
+	var status string
+	if err := db.QueryRow(`SELECT status FROM sync_log ORDER BY id DESC LIMIT 1`).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status == "ok" || status == "running" {
+		t.Fatalf("status = %q, want failed sync row", status)
+	}
+}
+
+func TestImportInterruptsPreviousRunningSync(t *testing.T) {
+	db := mustOpen(t)
+	defer db.Close()
+
+	started := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
+	if _, err := db.Exec(`INSERT INTO sync_log(started_at, status) VALUES (?, 'running')`, started); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Import(db, filepath.Join("..", "..", "testdata", "mymind_sample_export")); err != nil {
+		t.Fatal(err)
+	}
+
+	var status string
+	var finished sql.NullString
+	if err := db.QueryRow(`SELECT status, finished_at FROM sync_log WHERE started_at = ?`, started).Scan(&status, &finished); err != nil {
+		t.Fatal(err)
+	}
+	if status != "interrupted" {
+		t.Fatalf("status = %q, want interrupted", status)
+	}
+	if !finished.Valid {
+		t.Fatal("interrupted sync should have finished_at")
 	}
 }
 

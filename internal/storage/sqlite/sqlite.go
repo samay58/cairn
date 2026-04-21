@@ -23,6 +23,15 @@ func Open(path string) (*SQLiteSource, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, pragma := range []string{
+		`PRAGMA journal_mode = WAL`,
+		`PRAGMA synchronous = NORMAL`,
+	} {
+		if _, err := db.Exec(pragma); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("%s: %w", pragma, err)
+		}
+	}
 	if err := Migrate(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate: %w", err)
@@ -58,7 +67,9 @@ func (s *SQLiteSource) ByHandle(n int) (cards.Card, error) {
 	if err != nil {
 		return cards.Card{}, fmt.Errorf("no card at handle @%d (run `cairn search` or `cairn find` to refresh handles)", n)
 	}
-	s.hydrateTags([]cards.Card{c})
+	list := []cards.Card{c}
+	s.hydrateTags(list)
+	c = list[0]
 	return c, nil
 }
 
@@ -90,37 +101,30 @@ func (s *SQLiteSource) Search(rawQuery string, filters source.Filters, limit int
 		args = append(args, merged.Tag)
 	}
 
+	orderBy := ` ORDER BY cards.captured_at DESC`
+	if ftsQ != "" {
+		orderBy = ` ORDER BY bm25(cards_fts), cards.captured_at DESC`
+	}
 	q := `SELECT cards.id, cards.mymind_id, cards.kind, cards.title, coalesce(cards.url,''),
-	coalesce(cards.body,''), coalesce(cards.excerpt,''), coalesce(cards.source,''), cards.captured_at
-	FROM cards ` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY cards.captured_at DESC`
+		coalesce(cards.body,''), coalesce(cards.excerpt,''), coalesce(cards.source,''), cards.captured_at
+		FROM cards ` + join + ` WHERE ` + strings.Join(where, " AND ") + orderBy
 
 	if limit > 0 {
 		q += fmt.Sprintf(" LIMIT %d", limit)
 	}
 
-	rows, err := s.DB.Query(q, args...)
+	list, err := s.loadCards(q, args...)
 	if err != nil {
 		return nil
 	}
-	defer rows.Close()
+	s.hydrateTags(list)
 
-	var matches []render.Match
-	for rows.Next() {
-		c, err := scanCardRow(rows)
-		if err != nil {
-			continue
-		}
-		matches = append(matches, render.Match{Card: c, WhyShown: whyShownFTS(c, ftsQ)})
-	}
-	if len(matches) > 0 {
-		list := make([]cards.Card, len(matches))
-		for i := range matches {
-			list[i] = matches[i].Card
-		}
-		s.hydrateTags(list)
-		for i := range matches {
-			matches[i].Card = list[i]
-		}
+	matches := make([]render.Match, 0, len(list))
+	for _, c := range list {
+		matches = append(matches, render.Match{
+			Card:     c,
+			WhyShown: whyShownFTS(c, ftsQ),
+		})
 	}
 	return matches
 }
@@ -180,20 +184,33 @@ func (s *SQLiteSource) loadCards(query string, args ...any) ([]cards.Card, error
 }
 
 func (s *SQLiteSource) hydrateTags(list []cards.Card) {
-	for i, c := range list {
-		trows, err := s.DB.Query(`SELECT tag FROM tags WHERE card_id = ? ORDER BY tag`, c.ID)
-		if err != nil {
+	if len(list) == 0 {
+		return
+	}
+
+	args := make([]any, 0, len(list))
+	placeholders := make([]string, 0, len(list))
+	for _, c := range list {
+		args = append(args, c.ID)
+		placeholders = append(placeholders, "?")
+	}
+
+	rows, err := s.DB.Query(`SELECT card_id, tag FROM tags WHERE card_id IN (`+strings.Join(placeholders, ",")+`) ORDER BY card_id, tag`, args...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	tagsByCard := make(map[string][]string, len(list))
+	for rows.Next() {
+		var cardID, tag string
+		if err := rows.Scan(&cardID, &tag); err != nil {
 			continue
 		}
-		var tags []string
-		for trows.Next() {
-			var t string
-			if err := trows.Scan(&t); err == nil {
-				tags = append(tags, t)
-			}
-		}
-		trows.Close()
-		list[i].Tags = tags
+		tagsByCard[cardID] = append(tagsByCard[cardID], tag)
+	}
+	for i := range list {
+		list[i].Tags = tagsByCard[list[i].ID]
 	}
 }
 
@@ -268,9 +285,16 @@ func whyShownFTS(c cards.Card, q string) string {
 	if q == "" {
 		return "Recent."
 	}
-	lo := strings.ToLower(q)
-	if strings.Contains(strings.ToLower(c.Title), lo) {
-		return "Matched on title."
+	title := strings.ToLower(c.Title)
+	for _, token := range strings.Fields(strings.ToLower(q)) {
+		if strings.Contains(title, token) {
+			return "Matched on title."
+		}
+		for _, tag := range c.Tags {
+			if strings.EqualFold(tag, token) {
+				return "Matched on tag " + tag + "."
+			}
+		}
 	}
 	return "Matched on body."
 }
