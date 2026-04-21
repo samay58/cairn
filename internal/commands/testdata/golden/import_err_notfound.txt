@@ -1,6 +1,0 @@
-Error: import failed.
-
-Could not read export directory: /tmp/does-not-exist
-Last successful import: 2026-04-19 from /tmp/mymind-export-2026-04-19/
-
-Check the path and try again.

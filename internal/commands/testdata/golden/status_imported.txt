@@ -1,0 +1,8 @@
+cairn 0.1.0-phase1
+
+library   4 cards · last import <TS> · 0 pending
+storage   <TMP>/cairn.db (<SIZE>) · media cache off
+mcp       not installed
+clients   none
+
+Phase 1. Import-backed search. Other commands ship later.

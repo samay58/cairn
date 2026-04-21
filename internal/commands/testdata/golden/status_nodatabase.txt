@@ -1,0 +1,8 @@
+cairn 0.1.0-phase1
+
+library   25 cards (fixtures; no database yet)
+storage   run `cairn import <path>` to create a database
+mcp       not installed
+clients   none
+
+Phase 1. Import-backed search. Other commands ship later.

@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/samay58/cairn/internal/render"
 	"github.com/samay58/cairn/internal/source"
@@ -58,39 +59,73 @@ func newStatusCmd(src source.Source) *cobra.Command {
 
 func buildStatusView(src source.Source) statusView {
 	status := statusView{
-		Version:     "cairn 0.0.0-phase0",
+		Version:     "cairn 0.1.0-phase1",
 		Permissions: "Default search and related allow. Full content prompts.",
-		Phase:       "Phase 0 prototype. Real storage lands in Phase 1.",
+		Phase:       "Phase 1. Import-backed search. Other commands ship later.",
 	}
 	status.Library.Cards = src.Count()
-	status.Library.LastImport = "2026-04-19"
-	status.Library.Pending = 0
-	status.Storage.Path = "~/.cairn/cairn.db"
-	status.Storage.Size = "0 B"
-	status.Storage.MediaCache = "off"
 	status.MCP.State = "not installed"
 	status.MCP.Clients = []string{}
+
+	if ts, ok := src.LastImport(); ok {
+		status.Library.LastImport = ts.Format("2006-01-02T15:04:05Z")
+		status.Storage.Path = cairnDBPath()
+		status.Storage.Size = dbSizeHuman(status.Storage.Path)
+		status.Storage.MediaCache = "off"
+	} else {
+		status.Library.LastImport = "none"
+		status.Storage.Path = "run `cairn import <path>` to create a database"
+		status.Storage.Size = "0 B"
+		status.Storage.MediaCache = "off"
+	}
+	status.Library.Pending = 0
 	return status
 }
 
-func writeStatusPlain(out io.Writer, status statusView) error {
-	_, err := fmt.Fprintf(out,
-		"%s\n\n"+
-			"library      %d cards · last import %s · %d pending\n"+
-			"storage      %s (%s) · media cache %s\n"+
-			"mcp          %s\n"+
-			"clients      none\n"+
-			"permissions  default search and related allow · full content prompts\n\n"+
-			"%s\n",
-		status.Version,
-		status.Library.Cards,
-		status.Library.LastImport,
-		status.Library.Pending,
-		status.Storage.Path,
-		status.Storage.Size,
-		status.Storage.MediaCache,
-		status.MCP.State,
-		status.Phase,
-	)
+func writeStatusPlain(out io.Writer, s statusView) error {
+	if _, err := fmt.Fprintf(out, "%s\n\n", s.Version); err != nil {
+		return err
+	}
+	if s.Library.LastImport == "none" {
+		if _, err := fmt.Fprintf(out, "library   %d cards (fixtures; no database yet)\n", s.Library.Cards); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(out, "storage   %s\n", s.Storage.Path); err != nil {
+			return err
+		}
+	} else {
+		if _, err := fmt.Fprintf(out, "library   %d cards · last import %s · %d pending\n", s.Library.Cards, s.Library.LastImport, s.Library.Pending); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(out, "storage   %s (%s) · media cache %s\n", s.Storage.Path, s.Storage.Size, s.Storage.MediaCache); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(out, "mcp       %s\n", s.MCP.State); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(out, "clients   none"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(out); err != nil {
+		return err
+	}
+	_, err := fmt.Fprintln(out, s.Phase)
 	return err
+}
+
+func dbSizeHuman(path string) string {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "unknown"
+	}
+	n := info.Size()
+	switch {
+	case n < 1024:
+		return fmt.Sprintf("%d B", n)
+	case n < 1024*1024:
+		return fmt.Sprintf("%.1f KB", float64(n)/1024)
+	default:
+		return fmt.Sprintf("%.1f MB", float64(n)/1024/1024)
+	}
 }

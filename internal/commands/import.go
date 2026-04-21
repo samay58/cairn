@@ -1,11 +1,16 @@
 package commands
 
 import (
-	"errors"
+	"database/sql"
 	"fmt"
-	"strings"
+	"io"
+	"os"
+	"path/filepath"
 
+	"github.com/samay58/cairn/internal/importer"
+	"github.com/samay58/cairn/internal/storage/sqlite"
 	"github.com/spf13/cobra"
+	_ "modernc.org/sqlite"
 )
 
 func newImportCmd() *cobra.Command {
@@ -14,35 +19,59 @@ func newImportCmd() *cobra.Command {
 		Short: "Ingest a MyMind export folder",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := args[0]
-			if path == "/tmp/does-not-exist" {
-				return errors.New(strings.Join([]string{
-					"Error: import failed.",
-					"",
-					"Could not read export directory: /tmp/does-not-exist",
-					"Last successful import: 2026-04-19 from /tmp/mymind-export-2026-04-19/",
-					"",
-					"Check the path and try again.",
-				}, "\n"))
+			out := cmd.OutOrStdout()
+			errOut := cmd.ErrOrStderr()
+			exportDir := args[0]
+
+			if _, err := os.Stat(exportDir); err != nil {
+				return writeImportNotFound(out, exportDir)
 			}
 
-			out := cmd.OutOrStdout()
-			lines := []string{
-				fmt.Sprintf("Reading export from %s", path),
-				"Found cards.csv · 25 rows · media folder with 9 files",
-				"Parsing 25 cards         done",
-				"Extracting 9 media files done",
-				"Indexing 63 chunks       done",
-				"",
-				"Imported 25 cards (0 updated, 0 deleted). Database now at ~/.cairn/cairn.db.",
-				"Run `cairn search \"<query>\"` or `cairn find`.",
+			dbPath := cairnDBPath()
+			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+				return err
 			}
-			for _, line := range lines {
-				if _, err := fmt.Fprintln(out, line); err != nil {
-					return err
-				}
+			db, err := sql.Open("sqlite", dbPath)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			if err := sqlite.Migrate(db); err != nil {
+				return err
+			}
+
+			fmt.Fprintf(out, "Reading export from %s\n", exportDir)
+			result, err := importer.Import(db, exportDir)
+			if err != nil {
+				fmt.Fprintln(out, "Error: import failed.")
+				fmt.Fprintln(out)
+				fmt.Fprintf(out, "%v\n", err)
+				return nil
+			}
+			fmt.Fprintf(out, "Parsed %d cards; %d inserted, %d updated, %d tombstoned.\n",
+				result.Inserted+result.Updated, result.Inserted, result.Updated, result.Tombstoned)
+			fmt.Fprintf(out, "Media: %d files. Chunks: %d.\n\n", result.MediaCount, result.ChunkCount)
+			fmt.Fprintf(out, "Database at %s.\n", dbPath)
+			fmt.Fprintln(out, "Run `cairn search \"<query>\"` or `cairn find`.")
+			for _, w := range result.Warnings {
+				fmt.Fprintf(errOut, "warning: %s\n", w)
 			}
 			return nil
 		},
 	}
+}
+
+func writeImportNotFound(out io.Writer, path string) error {
+	lines := []string{
+		"Error: import failed.",
+		"",
+		fmt.Sprintf("Could not read export directory: %s", path),
+		"Check the path and try again.",
+	}
+	for _, line := range lines {
+		if _, err := fmt.Fprintln(out, line); err != nil {
+			return err
+		}
+	}
+	return nil
 }

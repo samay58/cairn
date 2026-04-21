@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/samay58/cairn/internal/golden"
@@ -76,4 +77,24 @@ func TestSearchEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	golden.Assert(t, "search_empty.txt", out.String())
+}
+
+func TestSearchPhase1CraftAfterImport(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("CAIRN_HOME", tmp)
+
+	importSampleHelper(t)
+
+	root, err := buildRootForCurrentDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"search", "craft"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	got := strings.ReplaceAll(out.String(), tmp, "<TMP>")
+	golden.Assert(t, "search_phase1_craft.txt", got)
 }

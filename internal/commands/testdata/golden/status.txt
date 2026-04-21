@@ -1,9 +1,0 @@
-cairn 0.0.0-phase0
-
-library      25 cards · last import 2026-04-19 · 0 pending
-storage      ~/.cairn/cairn.db (0 B) · media cache off
-mcp          not installed
-clients      none
-permissions  default search and related allow · full content prompts
-
-Phase 0 prototype. Real storage lands in Phase 1.

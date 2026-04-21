@@ -2,6 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/samay58/cairn/internal/source"
 	"github.com/spf13/cobra"
@@ -10,7 +14,7 @@ import (
 func newOpenCmd(src source.Source) *cobra.Command {
 	return &cobra.Command{
 		Use:   "open <card>",
-		Short: "Open a card in the MyMind browser",
+		Short: "Open a card in the default browser",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := parseHandle(args[0])
@@ -28,11 +32,36 @@ func newOpenCmd(src source.Source) *cobra.Command {
 				url = fmt.Sprintf("https://access.mymind.com/cards/%s", card.MyMindID)
 			}
 
-			if _, err := fmt.Fprintf(cmd.OutOrStdout(), "Would open: %s\n", url); err != nil {
+			out := cmd.OutOrStdout()
+			if os.Getenv("CAIRN_DRY_OPEN") == "1" {
+				_, err := fmt.Fprintf(out, "Would open: %s\n", url)
 				return err
 			}
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), "Phase 0 fake. Real `cairn open` invokes the OS default browser.")
-			return err
+			return launchBrowser(out, url)
 		},
 	}
+}
+
+func launchBrowser(out io.Writer, url string) error {
+	var c *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		c = exec.Command("open", url)
+	case "linux":
+		c = exec.Command("xdg-open", url)
+	case "windows":
+		c = exec.Command("cmd", "/c", "start", url)
+	default:
+		_, err := fmt.Fprintf(out, "Open this URL manually: %s\n", url)
+		return err
+	}
+	if err := c.Start(); err != nil {
+		_, werr := fmt.Fprintf(out, "Failed to open browser: %v\nURL: %s\n", err, url)
+		if werr != nil {
+			return werr
+		}
+		return nil
+	}
+	_, err := fmt.Fprintf(out, "Opened: %s\n", url)
+	return err
 }

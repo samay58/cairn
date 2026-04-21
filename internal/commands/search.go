@@ -28,6 +28,9 @@ func newSearchCmd(src source.Source) *cobra.Command {
 
 			query := strings.Join(args, " ")
 			matches := src.Search(query, source.Filters{}, limit)
+			if err := src.LastListSave(matches); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: failed to persist handles: %v\n", err)
+			}
 
 			out := cmd.OutOrStdout()
 			switch mode {
