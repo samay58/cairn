@@ -1,0 +1,11 @@
+Copy-pasteable cairn MCP server snippet for any MCP-compatible client:
+
+{
+  "cairn": {
+    "command": "cairn",
+    "args": ["mcp", "start"]
+  }
+}
+
+Merge this into your client's MCP config under whatever key it uses for servers.
+Phase 0 emits this snippet only. `cairn mcp install claude-code` and `claude-desktop` will write directly in Phase 3.

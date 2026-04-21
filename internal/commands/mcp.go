@@ -84,8 +84,23 @@ func newMCPInstallCmd() *cobra.Command {
 						"Run `cairn mcp permissions` to review tool-level scopes.\n",
 				)
 				return err
+			case "manual":
+				_, err := fmt.Fprint(out,
+					"Copy-pasteable cairn MCP server snippet for any MCP-compatible client:\n"+
+						"\n"+
+						"{\n"+
+						"  \"cairn\": {\n"+
+						"    \"command\": \"cairn\",\n"+
+						"    \"args\": [\"mcp\", \"start\"]\n"+
+						"  }\n"+
+						"}\n"+
+						"\n"+
+						"Merge this into your client's MCP config under whatever key it uses for servers.\n"+
+						"Phase 0 emits this snippet only. `cairn mcp install claude-code` and `claude-desktop` will write directly in Phase 3.\n",
+				)
+				return err
 			default:
-				_, err := fmt.Fprintf(out, "Unknown client %q. Phase 0 supports: claude-code, claude-desktop.\n", args[0])
+				_, err := fmt.Fprintf(out, "Unknown client %q. Phase 0 supports: claude-code, claude-desktop, manual.\n", args[0])
 				return err
 			}
 		},

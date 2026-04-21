@@ -51,6 +51,17 @@ func TestMCPAudit(t *testing.T) {
 	golden.Assert(t, "mcp_audit.txt", out.String())
 }
 
+func TestMCPInstallManual(t *testing.T) {
+	root := NewRoot()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"mcp", "install", "manual"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	golden.Assert(t, "mcp_install_manual.txt", out.String())
+}
+
 func TestMCPPermissions(t *testing.T) {
 	root := NewRoot()
 	var out bytes.Buffer
