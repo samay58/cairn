@@ -136,6 +136,12 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	if scanErr != nil {
 		r.Warnings = append(r.Warnings, fmt.Sprintf("media scan: %v", scanErr))
 	}
+	// Build a lookup from MyMind id to the card's row id so media rows land
+	// with the correct foreign key.
+	cardByMyMind := make(map[string]string, len(parsed))
+	for _, c := range parsed {
+		cardByMyMind[c.MyMindID] = c.ID
+	}
 	for _, it := range items {
 		if filepath.Base(it.Path) == "cards.csv" {
 			continue
@@ -149,8 +155,14 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		case it.Mime == "application/pdf":
 			mediaKind = "document"
 		}
-		if _, err := tx.Exec(`INSERT INTO media(card_id, kind, path, sha256, mime) VALUES ('', ?, ?, ?, ?)`,
-			mediaKind, it.Path, it.SHA256, it.Mime); err != nil {
+		stem := strings.TrimSuffix(filepath.Base(it.Path), filepath.Ext(it.Path))
+		cardID, ok := cardByMyMind[stem]
+		if !ok {
+			r.Warnings = append(r.Warnings, fmt.Sprintf("orphan media %s: no matching card id", filepath.Base(it.Path)))
+			continue
+		}
+		if _, err := tx.Exec(`INSERT INTO media(card_id, kind, path, sha256, mime) VALUES (?, ?, ?, ?, ?)`,
+			cardID, mediaKind, it.Path, it.SHA256, it.Mime); err != nil {
 			r.Warnings = append(r.Warnings, fmt.Sprintf("media insert %s: %v", it.Path, err))
 			continue
 		}
@@ -258,12 +270,6 @@ func equalTags(left, right []string) bool {
 	}
 	return true
 }
-
-// Note: the media `card_id` column has a foreign key to cards(id), and the
-// empty-string insert above would normally violate it. SQLite's foreign-key
-// enforcement is off by default, which lets the Phase 1 import land media rows
-// without card mapping. Phase 2 will do real card-to-media joining when the
-// export format exposes the linkage. For now this is intentional and noted.
 
 func upsertCard(tx *sql.Tx, c cards.Card, updatedAt string) error {
 	if _, err := tx.Exec(`INSERT INTO cards(id, mymind_id, kind, title, url, body, excerpt, source, captured_at, updated_at)

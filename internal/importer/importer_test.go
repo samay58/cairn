@@ -206,3 +206,72 @@ func TestImportInterruptsPreviousRunningSync(t *testing.T) {
 func writeFile(path, body string) error {
 	return os.WriteFile(path, []byte(body), 0o644)
 }
+
+func TestImportLinksMediaByFilenameStem(t *testing.T) {
+	dir := t.TempDir()
+	csv := "\ufeffid,type,title,url,content,note,tags,created\n" +
+		"abc,Article,With PDF,,body text,,ai,2026-04-20T00:00:00Z\n"
+	if err := os.WriteFile(filepath.Join(dir, "cards.csv"), []byte(csv), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "abc.pdf"), []byte("%PDF-1.4 fake"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	db := mustOpen(t)
+	defer db.Close()
+	if _, err := Import(db, dir); err != nil {
+		t.Fatal(err)
+	}
+	var cnt int
+	db.QueryRow(`SELECT count(*) FROM media WHERE card_id = (SELECT id FROM cards WHERE mymind_id='abc')`).Scan(&cnt)
+	if cnt != 1 {
+		t.Fatalf("expected 1 linked media row, got %d", cnt)
+	}
+	var empty int
+	db.QueryRow(`SELECT count(*) FROM media WHERE card_id = ''`).Scan(&empty)
+	if empty != 0 {
+		t.Fatalf("expected 0 empty-card-id rows, got %d", empty)
+	}
+}
+
+func TestImportWarnsOnOrphanMedia(t *testing.T) {
+	dir := t.TempDir()
+	csv := "\ufeffid,type,title,url,content,note,tags,created\n" +
+		"abc,Article,T,,body,,,2026-04-20T00:00:00Z\n"
+	if err := os.WriteFile(filepath.Join(dir, "cards.csv"), []byte(csv), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "orphan.pdf"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	db := mustOpen(t)
+	defer db.Close()
+	r, err := Import(db, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var any bool
+	for _, w := range r.Warnings {
+		if containsAny(w, "orphan", "no matching card") {
+			any = true
+		}
+	}
+	if !any {
+		t.Fatalf("expected warning about orphan.pdf, got %v", r.Warnings)
+	}
+}
+
+func containsAny(s string, subs ...string) bool {
+	for _, sub := range subs {
+		if len(sub) > 0 && len(s) >= len(sub) {
+			for i := 0; i+len(sub) <= len(s); i++ {
+				if s[i:i+len(sub)] == sub {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
