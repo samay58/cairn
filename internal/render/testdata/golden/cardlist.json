@@ -1,0 +1,26 @@
+[
+  {
+    "Card": {
+      "id": "",
+      "mymind_id": "",
+      "kind": "article",
+      "title": "OAuth 2.0 Device Authorization Grant",
+      "excerpt": "Describes the OAuth 2.0 device authorization grant flow for browserless\nand input-constrained devices.",
+      "source": "datatracker.ietf.org",
+      "captured_at": "2026-03-14T09:22:00Z"
+    },
+    "WhyShown": "matched on title and tag oauth"
+  },
+  {
+    "Card": {
+      "id": "",
+      "mymind_id": "",
+      "kind": "quote",
+      "title": "On craft",
+      "body": "The way you do anything is the way you do everything.",
+      "source": "Martha Beck",
+      "captured_at": "2026-03-18T14:05:00Z"
+    },
+    "WhyShown": "matched on tag craft"
+  }
+]
