@@ -16,6 +16,8 @@
 **Open items surfaced.**
 - The note card in pack output (`c_0018`) renders `source=""` because notes have no source URL. This is correct behavior; Phase 1 fixture imports will carry real source values populated from the import pipeline.
 - The `export` golden counts "9 media files" from the import fixture but only lists "5 files" in the export dry-run. The discrepancy is intentional: export only mirrors image and video attachments, not all media.
+- **Status `permissions` column deferred.** Spec §2.6 lists status as "Library size, last sync, MCP state, permissions". Phase 0 status shows the first three; the per-client permissions column arrives in Phase 1 alongside real config persistence.
+- **Phase 1 will introduce a `Source` interface.** Command handlers currently call `fixtures.All()` directly. When Phase 1 adds `ImportSource`/`APISource` per spec §"Architecture", every command file will need a small refactor to take a `Source` parameter. Expected, not a surprise.
 
 **Known Phase 0 cosmetic notes.**
 - Long excerpt lines in goldens exceed 80 columns. This is expected for content fields that wrap naturally in a terminal. No golden lines exceed 341 chars and none are unwieldy in context.
