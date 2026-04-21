@@ -118,7 +118,6 @@ cairn find · 25 cards · type: all  source: all  since: all
 @3  Dieter Rams desk, 1970s
     i · vitsoe.com · 2026-03-20
     recent
-    
 
 enter open url · o open in mymind · c copy · y yank · tab cycle filters · esc quit
 

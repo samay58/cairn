@@ -37,8 +37,10 @@ func CardList(matches []Match) string {
 		fmt.Fprintf(&b, "%s  %s\n", handle, m.Card.Title)
 		fmt.Fprintf(&b, "    %s\n", MetaLine(m.Card))
 		fmt.Fprintf(&b, "    %s\n", m.WhyShown)
-		for _, line := range strings.Split(excerpt, "\n") {
-			fmt.Fprintf(&b, "    %s\n", line)
+		if excerpt != "" {
+			for _, line := range strings.Split(excerpt, "\n") {
+				fmt.Fprintf(&b, "    %s\n", line)
+			}
 		}
 	}
 	return b.String()
