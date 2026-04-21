@@ -1,0 +1,10 @@
+Mirroring 25 cards to ~/phoenix/Clippings/MyMind/
+
+  2026-03-14  oauth-2-0-device-authorization-grant.md
+  2026-03-18  on-craft.md
+  2026-03-20  dieter-rams-desk-1970s.md
+  ... 22 more files ...
+
+Media (5 files) to ~/phoenix/Clippings/MyMind/_media/
+
+Phase 0: nothing written to disk. Real export runs in Phase 2.
