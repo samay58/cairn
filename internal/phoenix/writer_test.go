@@ -124,3 +124,65 @@ func TestWriterIdempotent(t *testing.T) {
 		t.Errorf("mtime changed on idempotent rewrite")
 	}
 }
+
+func TestWriterCopiesMediaAndLinksFromCard(t *testing.T) {
+	tmp := t.TempDir()
+	src := t.TempDir()
+	pdfPath := filepath.Join(src, "MDE0O3xIKzJh4Y.pdf")
+	if err := os.WriteFile(pdfPath, []byte("%PDF-1.4 fake pdf"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sha := contentSHA(t, pdfPath)
+
+	w := &Writer{Root: tmp}
+	bundles := []CardBundle{{
+		Card: cards.Card{
+			MyMindID:   "MDE0O3xIKzJh4Y",
+			Kind:       cards.KindArticle,
+			Title:      "With PDF",
+			CapturedAt: time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC),
+		},
+		Media: []cards.Media{{Kind: "document", Path: pdfPath, SHA256: sha, Mime: "application/pdf"}},
+	}}
+	r, err := w.Write(bundles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.MediaWritten != 1 {
+		t.Fatalf("MediaWritten = %d, want 1", r.MediaWritten)
+	}
+	want := filepath.Join(tmp, "_media", sha[:2], sha[2:4], sha+".pdf")
+	if _, err := os.Stat(want); err != nil {
+		t.Fatalf("expected media at %s: %v", want, err)
+	}
+	card, _ := os.ReadFile(filepath.Join(tmp, "2026-04-20-with-pdf.md"))
+	link := "_media/" + sha[:2] + "/" + sha[2:4] + "/" + sha + ".pdf"
+	if !bytes.Contains(card, []byte(link)) {
+		t.Fatalf("card missing relative media link %s:\n%s", link, card)
+	}
+}
+
+func TestWriterMediaSkippedWhenAlreadyPresent(t *testing.T) {
+	tmp := t.TempDir()
+	src := t.TempDir()
+	pdfPath := filepath.Join(src, "x.pdf")
+	os.WriteFile(pdfPath, []byte("same bytes"), 0o644)
+	sha := contentSHA(t, pdfPath)
+	dest := filepath.Join(tmp, "_media", sha[:2], sha[2:4], sha+".pdf")
+	os.MkdirAll(filepath.Dir(dest), 0o755)
+	os.WriteFile(dest, []byte("same bytes"), 0o644)
+
+	w := &Writer{Root: tmp}
+	bundles := []CardBundle{{
+		Card: cards.Card{MyMindID: "m", Kind: cards.KindArticle, Title: "T",
+			CapturedAt: time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)},
+		Media: []cards.Media{{Path: pdfPath, SHA256: sha, Mime: "application/pdf"}},
+	}}
+	r, err := w.Write(bundles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.MediaWritten != 0 || r.MediaSkipped != 1 {
+		t.Fatalf("got Written=%d Skipped=%d", r.MediaWritten, r.MediaSkipped)
+	}
+}

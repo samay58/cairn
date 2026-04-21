@@ -1,6 +1,9 @@
 package phoenix
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +21,30 @@ func (w *Writer) Write(bundles []CardBundle) (WriteReport, error) {
 		name := w.resolveFilename(b.Card.MyMindID, DailyFilename(b.Card.CapturedAt, b.Card.Title), writtenThisBatch)
 		writtenThisBatch[name] = true
 
-		content := RenderMarkdown(b.Card, nil)
+		refs := make([]MediaRef, 0, len(b.Media))
+		for _, m := range b.Media {
+			rel := MediaRelPath(m.SHA256, extFromPath(m.Path))
+			refs = append(refs, MediaRef{Filename: filepath.Base(m.Path), RelPath: rel})
+			if w.DryRun {
+				r.MediaWritten++
+				continue
+			}
+			dest := filepath.Join(w.Root, rel)
+			if existsSha(dest, m.SHA256) {
+				r.MediaSkipped++
+				continue
+			}
+			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+				return r, err
+			}
+			if err := copyFile(m.Path, dest); err != nil {
+				r.Warnings = append(r.Warnings, "copy "+m.Path+": "+err.Error())
+				continue
+			}
+			r.MediaWritten++
+		}
+
+		content := RenderMarkdown(b.Card, refs)
 		dest := filepath.Join(w.Root, name)
 
 		if w.DryRun {
@@ -50,8 +76,6 @@ func (w *Writer) resolveFilename(myMindID, base string, batch map[string]bool) s
 		if _, err := os.Stat(p); err != nil {
 			return false
 		}
-		// File exists on disk. If it belongs to this same mymind_id treat it
-		// as the card's home, not a collision.
 		if existingID := readMyMindID(p); existingID == myMindID {
 			return false
 		}
@@ -78,4 +102,40 @@ func sameContent(path, content string) (bool, error) {
 		return false, err
 	}
 	return string(existing) == content, nil
+}
+
+func extFromPath(p string) string {
+	e := filepath.Ext(p)
+	if e == "" {
+		return "bin"
+	}
+	return strings.TrimPrefix(e, ".")
+}
+
+func existsSha(dest, wantSha string) bool {
+	f, err := os.Open(dest)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return false
+	}
+	return hex.EncodeToString(h.Sum(nil)) == wantSha
+}
+
+func copyFile(src, dest string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
 }
