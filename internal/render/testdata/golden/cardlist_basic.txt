@@ -1,0 +1,10 @@
+@1  OAuth 2.0 Device Authorization Grant
+    a · datatracker.ietf.org · 2026-03-14
+    matched on title and tag oauth
+    Describes the OAuth 2.0 device authorization grant flow for browserless
+    and input-constrained devices.
+
+@2  On craft
+    q · Martha Beck · 2026-03-18
+    matched on tag craft
+    The way you do anything is the way you do everything.
