@@ -19,7 +19,12 @@ func CardList(matches []Match) string {
 			b.WriteString("\n")
 		}
 		handle := fmt.Sprintf("@%d", i+1)
-		meta := m.Card.Kind.Letter() + TokenSeparator + m.Card.Source + TokenSeparator + m.Card.CapturedAt.Format("2006-01-02")
+		metaParts := []string{m.Card.Kind.Letter()}
+		if m.Card.Source != "" {
+			metaParts = append(metaParts, m.Card.Source)
+		}
+		metaParts = append(metaParts, m.Card.CapturedAt.Format("2006-01-02"))
+		meta := strings.Join(metaParts, TokenSeparator)
 		excerpt := m.Card.Excerpt
 		if excerpt == "" {
 			excerpt = m.Card.Body
