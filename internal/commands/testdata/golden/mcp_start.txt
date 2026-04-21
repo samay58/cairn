@@ -1,0 +1,14 @@
+cairn mcp server (stdio). Phase 0 fake.
+
+Would expose 5 tools:
+  search_mind(query, limit?, filters?)
+  get_card(card_id, include_full_text?)
+  get_related(card_id, limit?)
+  create_context_pack(query, max_tokens?)
+  save_to_mind(url_or_text, note?)              [disabled]
+
+Client config:
+  claude-code     not installed
+  claude-desktop  not installed
+
+Phase 0 exits immediately. Real server runs in Phase 3.
