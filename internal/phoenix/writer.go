@@ -24,13 +24,15 @@ func (w *Writer) Write(bundles []CardBundle) (WriteReport, error) {
 		refs := make([]MediaRef, 0, len(b.Media))
 		for _, m := range b.Media {
 			rel := MediaRelPath(m.SHA256, extFromPath(m.Path))
-			refs = append(refs, MediaRef{Filename: filepath.Base(m.Path), RelPath: rel})
+			ref := MediaRef{Filename: filepath.Base(m.Path), RelPath: rel}
 			if w.DryRun {
+				refs = append(refs, ref)
 				r.MediaWritten++
 				continue
 			}
 			dest := filepath.Join(w.Root, rel)
 			if existsSha(dest, m.SHA256) {
+				refs = append(refs, ref)
 				r.MediaSkipped++
 				continue
 			}
@@ -41,6 +43,7 @@ func (w *Writer) Write(bundles []CardBundle) (WriteReport, error) {
 				r.Warnings = append(r.Warnings, "copy "+m.Path+": "+err.Error())
 				continue
 			}
+			refs = append(refs, ref)
 			r.MediaWritten++
 		}
 
