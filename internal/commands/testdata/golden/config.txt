@@ -1,0 +1,18 @@
+~/.cairn/config.toml (Phase 0 defaults)
+
+[storage]
+cache_full_content = false
+cache_media        = false
+
+[embeddings]
+model = "minilm-l6-v2"
+device = "cpu"
+
+[llm]
+provider = "anthropic"
+model    = "claude-opus-4-7"
+
+[mcp]
+default_permissions = { search_mind = true, get_related = true, get_card = "prompt", save_to_mind = false }
+
+Phase 0: values are hand-authored defaults. Real config reads/writes arrive in Phase 1.
