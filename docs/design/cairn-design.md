@@ -2,9 +2,7 @@
 
 **Date**: 2026-04-21
 **Owner**: Samay
-**Status**: Draft for approval
-
-> Written via `/forge` from the Cairn project brief (Apr 21, 2026). All ten §3 open questions resolved; two sub-decisions (card-kind letter mapping, full-content cache opt-in mechanism) resolved alongside. Repo location confirmed. This spec is the single source of truth from here forward. When it conflicts with the brief, this spec wins.
+**Status**: Approved. This is the single source of truth. When anything else in the repo conflicts with it, this spec wins.
 
 ---
 

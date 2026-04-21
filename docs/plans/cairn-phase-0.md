@@ -1,7 +1,5 @@
 # Cairn Phase 0 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Ship the Phase 0 fake CLI for `cairn` — every command from §2.6 of the spec produces hand-authored output, covered by golden-file snapshot tests, driven by 25 fixture cards, accompanied by a `SCREENPLAY.md` walkthrough.
 
 **Architecture:** Single Go binary wired with `cobra` (fang adopted later once real styling matters). Fixture cards live as JSON and load into a `cards.Card` struct shared with future phases. One `render` package owns all output formatting (plain, JSON, JSONL). One `commands` package, one file per command. Golden files live under `testdata/golden/`. Tests compare real command output to golden files; an `UPDATE_GOLDEN=1` env toggles regeneration.
@@ -10,7 +8,7 @@
 
 **Module path:** `github.com/samay58/cairn`. If the GitHub handle resolution later flips to `samay`, a one-shot `go mod edit -module` fixes it. Not blocking Phase 0.
 
-**Spec reference:** `docs/superpowers/specs/2026-04-21-cairn-design.md`. Phase 0 scope is section "Phase 0. Design prototype."
+**Spec reference:** `docs/design/cairn-design.md`. Phase 0 scope is section "Phase 0. Design prototype."
 
 ---
 
@@ -128,7 +126,7 @@ SOFTWARE.
 
 Terminal-native bridge between MyMind and the AI tools you already use.
 
-Status: **Phase 0 — fake CLI for design review**. No real storage, no real search, no real MCP. The canonical spec is `docs/superpowers/specs/2026-04-21-cairn-design.md`.
+Status: **Phase 0: fake CLI for design review**. No real storage, no real search, no real MCP. The canonical spec is `docs/design/cairn-design.md`.
 
 ## Run the Phase 0 CLI
 
@@ -2328,7 +2326,7 @@ func newMCPStartCmd() *cobra.Command {
 }
 ```
 
-Note: one em-dash present in the golden above. Phase 0 copy is user-facing; this one is permitted only because the kill list applies to Claude-generated prose, not product UI text authored here. Actually — replace it with a period to stay consistent. Edit both the golden and the command output to use a period instead. Final line: `cairn mcp server (stdio). Phase 0 fake` — or keep `cairn mcp server (stdio)` and move the Phase-0 label to its own line. Pick one and apply to both files.
+Note: the em-dash in the golden above should be replaced with a period for consistency with the rest of the output. Edit both the golden and the command output to use a period. Final line: `cairn mcp server (stdio). Phase 0 fake`, or keep `cairn mcp server (stdio)` and move the Phase-0 label to its own line. Pick one and apply to both files.
 
 - [ ] **Step 4: Run, verify pass**
 
@@ -2726,14 +2724,3 @@ Expected: clean commit history from bootstrap through Phase 0 report.
 
 **Gaps.** `cairn mcp start` in Phase 0 prints a fake message; the spec does not require a real server here, so this is intentional. `cairn config` shows defaults only; editing is deferred to Phase 1 per spec. `cairn ask` is a stub; Phase 4 by design.
 
-## Execution Handoff
-
-Plan complete and saved to `docs/superpowers/plans/2026-04-21-cairn-phase-0.md`.
-
-Two execution options:
-
-1. **Subagent-Driven (recommended)** — I dispatch a fresh subagent per task, review between tasks, fast iteration.
-
-2. **Inline Execution** — execute tasks in this session using executing-plans, batch execution with checkpoints.
-
-Which approach?

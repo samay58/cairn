@@ -1,14 +1,12 @@
 # Cairn Phase 1 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Replace Phase 0's hand-authored output with a real import-and-search pipeline. Parse a MyMind export into SQLite, maintain an FTS5 shadow index, make `cairn import`, `cairn status`, `cairn search`, `cairn get`, and `cairn open` work on real data. Leave `find`, `pack`, `ask`, `export`, `config`, `mcp *` on the Phase 0 fakes for now (they land in Phases 2 through 3).
 
 **Architecture:** Introduce a `Source` interface that abstracts over the existing Phase 0 fixtures and a new SQLite-backed store. Every Phase 0 command handler keeps working by calling through `Source`; the five Phase 1 commands switch to the SQLite implementation when a database exists, fall back to fixtures otherwise. The import pipeline is a discrete package that produces rows to upsert; the SQLite package owns schema, migrations, FTS5 triggers, and handle persistence. Chunking runs at import time at paragraph granularity (200 to 600 tokens per chunk) so Phase 2 can layer embeddings without re-ingesting.
 
 **Tech Stack:** Go 1.26, `modernc.org/sqlite` (pure-Go SQLite, no CGo), stdlib `encoding/csv`, stdlib `crypto/sha256`, existing `github.com/spf13/cobra` + internal render package. No new third-party deps beyond `modernc.org/sqlite`.
 
-**Spec reference:** `docs/superpowers/specs/2026-04-21-cairn-design.md` sections "Data model", "Retrieval", "Permission model", "Phase 1. Import and local search". Phase 0 plan is `docs/superpowers/plans/2026-04-21-cairn-phase-0.md`; Phase 0 report is `PHASE-0-REPORT.md`.
+**Spec reference:** `docs/design/cairn-design.md` sections "Data model", "Retrieval", "Permission model", "Phase 1. Import and local search". Phase 0 plan is `docs/plans/cairn-phase-0.md`; Phase 0 report is `PHASE-0-REPORT.md`.
 
 ---
 
@@ -3040,14 +3038,3 @@ git add docs/IMPORT_FORMAT.md PHASE-1-REPORT.md && \
 
 **Known risk.** The assumed MyMind CSV schema may not match reality. Task 14 and Task 20 both account for this: the parser is permissive, produces warnings, and IMPORT_FORMAT.md is explicitly a living document.
 
----
-
-## Execution Handoff
-
-Plan complete and saved to `docs/superpowers/plans/2026-04-21-cairn-phase-1.md`. Two execution options:
-
-1. **Subagent-driven (recommended)** — fresh subagent per task, review between tasks, fast iteration.
-
-2. **Inline execution** — executing-plans skill runs tasks in this session with checkpoint batching.
-
-Which approach?

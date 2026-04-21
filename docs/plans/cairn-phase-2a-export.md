@@ -1,16 +1,12 @@
-# Cairn Phase 2a Implementation Plan — Phoenix Mirror
-
-> **Final resting place once approved:** `docs/superpowers/plans/2026-04-22-cairn-phase-2a-export.md`. Plan-mode harness forces a temporary location; copy the file there before running the plan.
->
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+# Cairn Phase 2a Implementation Plan: Phoenix Mirror
 
 **Goal:** Replace the Phase 0 fake `cairn export` with a real Phoenix-vault mirror. Every card with a body becomes a markdown file at `~/phoenix/Clippings/MyMind/{YYYY-MM-DD}-{slug}.md`, every media asset lands content-addressed at `~/phoenix/Clippings/MyMind/_media/{sha}.{ext}` with a relative link from the card's markdown. Along the way, fix the Phase 1 open item where every `media` row was written with an empty `card_id`: the real MyMind export keys attachments by filename-stem equal to `mymind_id`, so cards can own their media now.
 
-**Architecture:** Add a new `internal/phoenix` package that knows nothing about SQLite or commands — it takes cards and their media, writes files to a configurable vault root, and reports what it wrote. The command layer (`internal/commands/export.go`) orchestrates: reads cards and their media from the `Source`, asks the phoenix writer to emit, reports. Source gains one method (`MediaFor(cardID)`) so `SQLiteSource` can serve per-card attachments. Importer gains filename-stem ↔ mymind_id lookup so media rows land with real `card_id`. A one-time schema migration (0002) turns on `PRAGMA foreign_keys = ON` and hard-deletes any legacy rows with empty `card_id` so the FK isn't immediately violated.
+**Architecture:** Add a new `internal/phoenix` package that knows nothing about SQLite or commands; it takes cards and their media, writes files to a configurable vault root, and reports what it wrote. The command layer (`internal/commands/export.go`) orchestrates: reads cards and their media from the `Source`, asks the phoenix writer to emit, reports. Source gains one method (`MediaFor(cardID)`) so `SQLiteSource` can serve per-card attachments. Importer gains filename-stem ↔ mymind_id lookup so media rows land with real `card_id`. A one-time schema migration (0002) turns on `PRAGMA foreign_keys = ON` and hard-deletes any legacy rows with empty `card_id` so the FK isn't immediately violated.
 
 **Tech Stack:** Go 1.26, stdlib `os`, `io`, `path/filepath`, `crypto/sha256`, existing `modernc.org/sqlite`, existing `spf13/cobra` + render package. New internal package `internal/phoenix`; no new third-party deps. Markdown frontmatter is hand-rolled YAML (the spec forbids dep-creep and this is 6 keys, flat).
 
-**Spec reference:** `docs/superpowers/specs/2026-04-21-cairn-design.md` §"Phoenix bridge" (line 176-180) and §"Phase 2. TUI, packs, Phoenix mirror". `PHASE-1-REPORT.md` open items (media linkage; `source.Open` cycle). Phase 1 plan: `docs/superpowers/plans/2026-04-21-cairn-phase-1.md`.
+**Spec reference:** `docs/design/cairn-design.md` §"Phoenix bridge" (line 176-180) and §"Phase 2. TUI, packs, Phoenix mirror". `PHASE-1-REPORT.md` open items (media linkage; `source.Open` cycle). Phase 1 plan: `docs/plans/cairn-phase-1.md`.
 
 ---
 
@@ -1705,9 +1701,3 @@ After all tasks:
 - Live acceptance: import the real 43-card export, run `cairn export --to /tmp/cairn-vault`, open a couple of the generated `.md` files in Obsidian, confirm frontmatter parses and attachment links resolve.
 - `git log --oneline` shows one commit per task, no WIP.
 
----
-
-**Execution handoff (after approval):**
-
-1. **Subagent-Driven (recommended)** — dispatch a fresh subagent per task, review between tasks. Matches Phase 1's cadence.
-2. **Inline Execution** — execute tasks in a single session using superpowers:executing-plans, batch execution with checkpoints.

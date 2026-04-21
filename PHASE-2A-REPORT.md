@@ -27,9 +27,9 @@ and the card markdown links resolve in Obsidian via the relative path.
 
 **What's still Phase 0 fake.**
 
-- `cairn find` — real TUI in Phase 2d.
-- `cairn pack` and `cairn ask` — Phases 2b and 4.
-- `cairn mcp *` — Phase 3.
+- `cairn find`: real TUI in Phase 2d.
+- `cairn pack` and `cairn ask`: Phases 2b and 4.
+- `cairn mcp *`: Phase 3.
 - `cairn config` remains a defaults display.
 - `render.Match` still card-level (chunk-level provenance is Phase 2c).
 - `source.Filters` still lives in `internal/source`; no cycle has forced relocation yet.

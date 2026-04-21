@@ -12,3 +12,7 @@
 # Cairn runtime (lives in ~/.cairn, not here, but guard anyway)
 /cairn
 /cairn.db
+
+# Local agent notes, not for the public repo
+/CLAUDE.md
+/.conductor/
