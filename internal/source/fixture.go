@@ -82,6 +82,10 @@ func (f *FixtureSource) LastListSave(_ []render.Match) error {
 	return nil
 }
 
+func (f *FixtureSource) MediaFor(_ string) []cards.Media {
+	return nil
+}
+
 // demoQuery returns true for any non-empty query that is not one of our
 // curated cases. This is the Phase 0 "everything else shows the first three
 // fixtures" behavior; kept as a named function for clarity.

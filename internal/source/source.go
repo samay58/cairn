@@ -24,4 +24,5 @@ type Source interface {
 	Search(query string, filters Filters, limit int) []render.Match
 	LastImport() (time.Time, bool)
 	LastListSave(matches []render.Match) error
+	MediaFor(cardID string) []cards.Media
 }

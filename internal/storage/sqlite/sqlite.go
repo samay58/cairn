@@ -142,6 +142,25 @@ func (s *SQLiteSource) LastImport() (time.Time, bool) {
 	return t, true
 }
 
+func (s *SQLiteSource) MediaFor(cardID string) []cards.Media {
+	rows, err := s.DB.Query(
+		`SELECT kind, path, coalesce(sha256,''), coalesce(mime,'')
+		 FROM media WHERE card_id = ? ORDER BY path`, cardID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []cards.Media
+	for rows.Next() {
+		var m cards.Media
+		if err := rows.Scan(&m.Kind, &m.Path, &m.SHA256, &m.Mime); err != nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out
+}
+
 func (s *SQLiteSource) LastListSave(matches []render.Match) error {
 	tx, err := s.DB.Begin()
 	if err != nil {
