@@ -34,7 +34,7 @@
     "mymind_id": "mm_f7g8",
     "kind": "note",
     "title": "Cairn naming",
-    "body": "Named after the stone markers hikers leave on trails — each card is a small cairn pointing the way back to something worth remembering. Simple, unadorned, enduring.",
+    "body": "Named after the stone markers hikers leave on trails. Each card is a small cairn pointing the way back to something worth remembering. Simple, unadorned, enduring.",
     "tags": ["cairn", "naming", "meta"],
     "captured_at": "2026-03-16T10:30:00Z"
   },
@@ -44,7 +44,7 @@
     "kind": "article",
     "title": "The Unreasonable Effectiveness of Checklists",
     "url": "https://betterprogramming.pub/the-checklist-manifesto",
-    "excerpt": "Atul Gawande argues that checklists are the most underrated tool in complex, high-stakes environments — from surgery to aviation to software deployment.",
+    "excerpt": "Atul Gawande argues that checklists are the most underrated tool in complex, high-stakes environments: from surgery to aviation to software deployment.",
     "source": "betterprogramming.pub",
     "tags": ["productivity", "checklists", "systems"],
     "captured_at": "2026-03-21T08:45:00Z"
@@ -135,7 +135,7 @@
     "mymind_id": "mm_z7a8",
     "kind": "note",
     "title": "Phase 0 scope boundary",
-    "body": "Phase 0 is fake output only — no real network calls, no sqlite, no embeddings. Every command produces hand-authored output driven by fixture cards. Golden file tests lock the output. This constraint keeps the scope shippable in a weekend.",
+    "body": "Phase 0 is fake output only. No real network calls, no sqlite, no embeddings. Every command produces hand-authored output driven by fixture cards. Golden file tests lock the output. This constraint keeps the scope shippable in a weekend.",
     "tags": ["cairn", "architecture", "phase0"],
     "captured_at": "2026-03-30T08:20:00Z"
   },
@@ -184,7 +184,7 @@
     "kind": "article",
     "title": "Designing Small Things",
     "url": "https://www.subtraction.com/designing-small-things/",
-    "excerpt": "Khoi Vinh on why constraints imposed by small surfaces — mobile screens, watch faces, terminal windows — often produce the clearest thinking about what a product is really for.",
+    "excerpt": "Khoi Vinh on why constraints imposed by small surfaces, mobile screens, watch faces, terminal windows, often produce the clearest thinking about what a product is really for.",
     "source": "subtraction.com",
     "tags": ["design", "constraints", "product"],
     "captured_at": "2026-04-04T11:20:00Z"
@@ -194,7 +194,7 @@
     "mymind_id": "mm_l9m0",
     "kind": "note",
     "title": "Tag taxonomy draft",
-    "body": "Starting tags: auth, design, go, craft, philosophy, cli, databases, security, concurrency. Keep flat — no nested namespaces in Phase 0. Hierarchy can emerge later from co-occurrence patterns.",
+    "body": "Starting tags: auth, design, go, craft, philosophy, cli, databases, security, concurrency. Keep flat; no nested namespaces in Phase 0. Hierarchy can emerge later from co-occurrence patterns.",
     "tags": ["cairn", "tags", "taxonomy"],
     "captured_at": "2026-04-05T16:10:00Z"
   },
