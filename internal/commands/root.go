@@ -5,6 +5,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Execute runs the cairn CLI with its default Source (SQLite if the database
+// exists at the configured path, else fixtures).
+func Execute() error {
+	src, err := openSource(cairnDBPath())
+	if err != nil {
+		return err
+	}
+	return NewRootWithSource(src).Execute()
+}
+
+// NewRoot keeps the Phase 0 constructor intact for tests that build the tree
+// explicitly with a FixtureSource.
 func NewRoot() *cobra.Command {
 	return NewRootWithSource(source.NewFixtureSource())
 }
