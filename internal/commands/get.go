@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/samay58/cairn/internal/fixtures"
+	"github.com/samay58/cairn/internal/render"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,7 @@ func newGetCmd() *cobra.Command {
 				fmt.Fprintln(out, "Run a list command (search, find) to refresh handles.")
 				return nil
 			}
-			meta := c.Kind.Letter() + " · " + c.Source + " · " + c.CapturedAt.Format("2006-01-02")
+			meta := render.MetaLine(c)
 			fmt.Fprintf(out, "@%d  %s\n", n, c.Title)
 			fmt.Fprintln(out, meta)
 			if len(c.Tags) > 0 {
