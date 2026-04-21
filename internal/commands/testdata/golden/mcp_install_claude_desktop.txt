@@ -1,0 +1,13 @@
+Installing cairn MCP server for claude-desktop.
+
+Target config: ~/Library/Application Support/Claude/claude_desktop_config.json
+Existing servers detected: 4 (brave-search, filesystem, exa, perplexity-ask)
+
+Proposed merge (new keys only):
+  mcpServers.cairn = {
+    "command": "cairn",
+    "args": ["mcp", "start"]
+  }
+
+Phase 0 would write this merge. Real install runs in Phase 3.
+Run `cairn mcp permissions` to review tool-level scopes.
