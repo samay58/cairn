@@ -1,0 +1,13 @@
+Installing cairn MCP server for claude-code.
+
+Target config: ~/.claude/mcp.json
+Existing servers detected: 2 (brave-search, filesystem)
+
+Proposed merge (new keys only):
+  mcpServers.cairn = {
+    "command": "cairn",
+    "args": ["mcp", "start"]
+  }
+
+Phase 0 would write this merge. Real install runs in Phase 3.
+Run `cairn mcp permissions` to review tool-level scopes.
