@@ -1,0 +1,3 @@
+`cairn ask` ships in Phase 4, after the Phase 3 integrity gate passes.
+
+For now, use `cairn pack "<question>"` to hand a cited bundle to your AI of choice.
