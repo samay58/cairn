@@ -1,17 +1,32 @@
 <context source="cairn" query="oauth device flow" cards="3">
-  <card id="c_0001" kind="article" captured="2026-03-14" source="datatracker.ietf.org">
+  <card id="c_0001" kind="article" captured="2026-03-14"
+        source="datatracker.ietf.org">
     <title>OAuth 2.0 Device Authorization Grant</title>
     <url>https://datatracker.ietf.org/doc/html/rfc8628</url>
-    <excerpt>Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.</excerpt>
+    <excerpt>
+      Describes the OAuth 2.0 device authorization grant flow for browserless
+      and input-constrained devices.
+    </excerpt>
   </card>
-  <card id="c_0011" kind="article" captured="2026-03-27" source="oauth.net">
+  <card id="c_0011" kind="article" captured="2026-03-27"
+        source="oauth.net">
     <title>Proof Key for Code Exchange (PKCE)</title>
     <url>https://oauth.net/2/pkce/</url>
-    <excerpt>PKCE protects public OAuth 2.0 clients from authorization code interception attacks by binding the token request to the original authorization request via a code verifier and challenge.</excerpt>
+    <excerpt>
+      PKCE protects public OAuth 2.0 clients from authorization code
+      interception attacks by binding the token request to the original
+      authorization request via a code verifier and challenge.
+    </excerpt>
   </card>
-  <card id="c_0018" kind="note" captured="2026-04-03" source="">
+  <card id="c_0018" kind="note" captured="2026-04-03">
     <title>Why device flow for cairn</title>
-    <excerpt>Cairn will use device flow for its initial OAuth handshake because the CLI has no embedded browser. The device flow sends the user to a URL on their phone or laptop browser while the CLI polls for token delivery. PKCE layered on top ensures the token exchange can't be intercepted even if the authorization code leaks.</excerpt>
+    <excerpt>
+      Cairn will use device flow for its initial OAuth handshake because the CLI
+      has no embedded browser. The device flow sends the user to a URL on their
+      phone or laptop browser while the CLI polls for token delivery. PKCE
+      layered on top ensures the token exchange can't be intercepted even if the
+      authorization code leaks.
+    </excerpt>
   </card>
 </context>
 

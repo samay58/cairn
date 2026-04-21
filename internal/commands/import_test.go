@@ -24,13 +24,10 @@ func TestImportNotFound(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SilenceErrors = true
-	root.SilenceUsage = true
 	root.SetArgs([]string{"import", "/tmp/does-not-exist"})
-	// Import of a non-existent path is expected to exit cleanly: Phase 0 branches
-	// on the magic path and writes the error narrative to out, returning nil.
-	if err := root.Execute(); err != nil {
-		t.Fatalf("expected nil error from fake import, got %v", err)
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error from missing import path")
 	}
-	golden.Assert(t, "import_err_notfound.txt", out.String())
+	golden.Assert(t, "import_err_notfound.txt", err.Error()+"\n")
 }

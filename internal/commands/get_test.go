@@ -23,8 +23,9 @@ func TestGetUnknownHandle(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetArgs([]string{"get", "@99"})
-	if err := root.Execute(); err != nil {
-		t.Fatal(err)
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown handle")
 	}
-	golden.Assert(t, "get_err_unknown.txt", out.String())
+	golden.Assert(t, "get_err_unknown.txt", err.Error()+"\n")
 }

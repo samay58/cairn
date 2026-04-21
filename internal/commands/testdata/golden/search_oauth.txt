@@ -1,14 +1,21 @@
 @1  OAuth 2.0 Device Authorization Grant
     a · datatracker.ietf.org · 2026-03-14
-    matched on title and tag oauth
-    Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.
+    Matched on title and tag oauth.
+    Describes the OAuth 2.0 device authorization grant flow for browserless and
+    input-constrained devices.
 
 @2  Proof Key for Code Exchange (PKCE)
     a · oauth.net · 2026-03-27
-    matched on tag auth
-    PKCE protects public OAuth 2.0 clients from authorization code interception attacks by binding the token request to the original authorization request via a code verifier and challenge.
+    Matched on tag auth.
+    PKCE protects public OAuth 2.0 clients from authorization code interception
+    attacks by binding the token request to the original authorization request
+    via a code verifier and challenge.
 
 @3  Why device flow for cairn
     n · 2026-04-03
-    matched on body
-    Cairn will use device flow for its initial OAuth handshake because the CLI has no embedded browser. The device flow sends the user to a URL on their phone or laptop browser while the CLI polls for token delivery. PKCE layered on top ensures the token exchange can't be intercepted even if the authorization code leaks.
+    Matched on body.
+    Cairn will use device flow for its initial OAuth handshake because the CLI
+    has no embedded browser. The device flow sends the user to a URL on their
+    phone or laptop browser while the CLI polls for token delivery. PKCE layered
+    on top ensures the token exchange can't be intercepted even if the
+    authorization code leaks.

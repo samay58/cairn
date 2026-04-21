@@ -14,4 +14,5 @@ Per-client MCP permissions
     create_context_pack   allow
     save_to_mind          deny
 
-Phase 0: values are the privacy-first defaults. Edit ~/.cairn/config.toml in Phase 3 to change them.
+Phase 0 values are the privacy-first defaults.
+Edit ~/.cairn/config.toml in Phase 3 to change them.

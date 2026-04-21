@@ -12,6 +12,12 @@ type Match struct {
 	WhyShown string
 }
 
+type CardListItem struct {
+	Handle   int        `json:"handle"`
+	Card     cards.Card `json:"card"`
+	WhyShown string     `json:"why_shown"`
+}
+
 // MetaLine formats the one-line type · source · date meta string.
 // Source is omitted when empty.
 func MetaLine(c cards.Card) string {
@@ -30,18 +36,41 @@ func CardList(matches []Match) string {
 			b.WriteString("\n")
 		}
 		handle := fmt.Sprintf("@%d", i+1)
-		excerpt := m.Card.Excerpt
-		if excerpt == "" {
-			excerpt = m.Card.Body
-		}
 		fmt.Fprintf(&b, "%s  %s\n", handle, m.Card.Title)
 		fmt.Fprintf(&b, "    %s\n", MetaLine(m.Card))
-		fmt.Fprintf(&b, "    %s\n", m.WhyShown)
-		if excerpt != "" {
-			for _, line := range strings.Split(excerpt, "\n") {
-				fmt.Fprintf(&b, "    %s\n", line)
-			}
+		for _, line := range WrapLines("    ", m.WhyShown, DefaultWidth) {
+			fmt.Fprintf(&b, "%s\n", line)
+		}
+		for _, line := range WrapLines("    ", ExcerptText(m.Card), DefaultWidth) {
+			fmt.Fprintf(&b, "%s\n", line)
 		}
 	}
 	return b.String()
+}
+
+func CardListItems(matches []Match) []CardListItem {
+	items := make([]CardListItem, 0, len(matches))
+	for i, match := range matches {
+		items = append(items, CardListItem{
+			Handle:   i + 1,
+			Card:     match.Card,
+			WhyShown: match.WhyShown,
+		})
+	}
+	return items
+}
+
+func ExcerptText(card cards.Card) string {
+	switch {
+	case card.Excerpt != "":
+		return card.Excerpt
+	case card.Body != "":
+		return card.Body
+	case card.Kind == cards.KindImage && card.Source != "":
+		return "Saved image from " + card.Source + "."
+	case card.Kind == cards.KindImage:
+		return "Saved image."
+	default:
+		return "No excerpt available."
+	}
 }

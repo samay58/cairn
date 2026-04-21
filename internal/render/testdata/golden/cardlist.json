@@ -1,6 +1,7 @@
 [
   {
-    "Card": {
+    "handle": 1,
+    "card": {
       "id": "",
       "mymind_id": "",
       "kind": "article",
@@ -9,10 +10,11 @@
       "source": "datatracker.ietf.org",
       "captured_at": "2026-03-14T09:22:00Z"
     },
-    "WhyShown": "matched on title and tag oauth"
+    "why_shown": "matched on title and tag oauth"
   },
   {
-    "Card": {
+    "handle": 2,
+    "card": {
       "id": "",
       "mymind_id": "",
       "kind": "quote",
@@ -21,6 +23,6 @@
       "source": "Martha Beck",
       "captured_at": "2026-03-18T14:05:00Z"
     },
-    "WhyShown": "matched on tag craft"
+    "why_shown": "matched on tag craft"
   }
 ]

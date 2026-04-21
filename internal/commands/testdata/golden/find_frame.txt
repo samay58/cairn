@@ -4,18 +4,21 @@ cairn find · 25 cards · type: all  source: all  since: all
 
 @1  OAuth 2.0 Device Authorization Grant
     a · datatracker.ietf.org · 2026-03-14
-    recent
-    Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.
+    Recent.
+    Describes the OAuth 2.0 device authorization grant flow for browserless and
+    input-constrained devices.
 
 @2  On craft
     q · Martha Beck · 2026-03-18
-    recent
+    Recent.
     The way you do anything is the way you do everything.
 
 @3  Dieter Rams desk, 1970s
     i · vitsoe.com · 2026-03-20
-    recent
+    Recent.
+    Saved image from vitsoe.com.
 
-enter open url · o open in mymind · c copy · y yank · tab cycle filters · esc quit
+enter open url · o open in mymind · c copy · y yank
+tab cycle filters · esc quit
 
 Phase 0: this is a static mock. Real TUI lands in Phase 2.

@@ -1,2 +1,2 @@
 Would open: https://datatracker.ietf.org/doc/html/rfc8628
-(Phase 0 fake: real `cairn open` invokes the OS default browser.)
+Phase 0 fake. Real `cairn open` invokes the OS default browser.

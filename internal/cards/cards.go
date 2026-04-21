@@ -25,7 +25,7 @@ func (k Kind) Letter() string {
 	case KindNote:
 		return "n"
 	}
-	return "?"
+	panic(fmt.Sprintf("cards: unknown kind %q", k))
 }
 
 func KindFromString(s string) (Kind, error) {

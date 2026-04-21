@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/samay58/cairn/internal/golden"
@@ -25,6 +26,21 @@ func TestSearchOAuthJSON(t *testing.T) {
 	root.SetArgs([]string{"search", "oauth", "--json"})
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
+	}
+	var got []struct {
+		Handle   int    `json:"handle"`
+		WhyShown string `json:"why_shown"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal search json: %v", err)
+	}
+	for i, item := range got {
+		if item.Handle != i+1 {
+			t.Fatalf("handle[%d] = %d, want %d", i, item.Handle, i+1)
+		}
+		if item.WhyShown == "" {
+			t.Fatalf("why_shown[%d] is empty", i)
+		}
 	}
 	golden.Assert(t, "search_oauth.json", out.String())
 }
