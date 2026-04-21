@@ -26,6 +26,7 @@ func Open(path string) (*SQLiteSource, error) {
 	for _, pragma := range []string{
 		`PRAGMA journal_mode = WAL`,
 		`PRAGMA synchronous = NORMAL`,
+		`PRAGMA foreign_keys = ON`,
 	} {
 		if _, err := db.Exec(pragma); err != nil {
 			db.Close()
