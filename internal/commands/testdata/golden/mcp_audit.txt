@@ -1,0 +1,17 @@
+Today
+
+  10:42  Claude Code searched "OAuth MCP authorization"
+         Returned 5 snippets
+
+  10:43  Claude Code requested full content for @2
+         Allowed once by user
+
+  10:49  Cursor searched "SQLite FTS5"
+         Returned 8 snippets
+
+Yesterday
+
+  22:11  Claude Desktop searched "prompt injection mitigations"
+         Returned 4 snippets
+
+Phase 0: sample audit rows. Real log reads from the mcp_audit table in Phase 3.
