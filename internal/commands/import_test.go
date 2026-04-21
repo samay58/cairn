@@ -18,3 +18,15 @@ func TestImportOK(t *testing.T) {
 	}
 	golden.Assert(t, "import_ok.txt", out.String())
 }
+
+func TestImportNotFound(t *testing.T) {
+	root := NewRoot()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SilenceErrors = true
+	root.SilenceUsage = true
+	root.SetArgs([]string{"import", "/tmp/does-not-exist"})
+	_ = root.Execute()
+	golden.Assert(t, "import_err_notfound.txt", out.String())
+}
