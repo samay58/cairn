@@ -1,0 +1,2 @@
+no card at handle @99 (valid: @1..@25)
+Run a list command (search, find) to refresh handles.
