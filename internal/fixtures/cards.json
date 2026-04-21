@@ -1,0 +1,251 @@
+[
+  {
+    "id": "c_0001",
+    "mymind_id": "mm_a1b2",
+    "kind": "article",
+    "title": "OAuth 2.0 Device Authorization Grant",
+    "url": "https://datatracker.ietf.org/doc/html/rfc8628",
+    "excerpt": "Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.",
+    "source": "datatracker.ietf.org",
+    "tags": ["oauth", "auth", "rfc"],
+    "captured_at": "2026-03-14T09:22:00Z"
+  },
+  {
+    "id": "c_0002",
+    "mymind_id": "mm_b3c4",
+    "kind": "quote",
+    "title": "On craft",
+    "body": "The way you do anything is the way you do everything.",
+    "source": "Martha Beck",
+    "tags": ["craft", "philosophy"],
+    "captured_at": "2026-03-18T14:05:00Z"
+  },
+  {
+    "id": "c_0003",
+    "mymind_id": "mm_d5e6",
+    "kind": "image",
+    "title": "Dieter Rams desk, 1970s",
+    "source": "vitsoe.com",
+    "tags": ["design", "rams"],
+    "captured_at": "2026-03-20T11:00:00Z"
+  },
+  {
+    "id": "c_0004",
+    "mymind_id": "mm_f7g8",
+    "kind": "note",
+    "title": "Cairn naming",
+    "body": "Named after the stone markers hikers leave on trails — each card is a small cairn pointing the way back to something worth remembering. Simple, unadorned, enduring.",
+    "tags": ["cairn", "naming", "meta"],
+    "captured_at": "2026-03-16T10:30:00Z"
+  },
+  {
+    "id": "c_0005",
+    "mymind_id": "mm_h9i0",
+    "kind": "article",
+    "title": "The Unreasonable Effectiveness of Checklists",
+    "url": "https://betterprogramming.pub/the-checklist-manifesto",
+    "excerpt": "Atul Gawande argues that checklists are the most underrated tool in complex, high-stakes environments — from surgery to aviation to software deployment.",
+    "source": "betterprogramming.pub",
+    "tags": ["productivity", "checklists", "systems"],
+    "captured_at": "2026-03-21T08:45:00Z"
+  },
+  {
+    "id": "c_0006",
+    "mymind_id": "mm_j1k2",
+    "kind": "image",
+    "title": "Braun T3 pocket radio, 1958",
+    "source": "design-museum.de",
+    "tags": ["design", "braun", "rams"],
+    "captured_at": "2026-03-22T15:20:00Z"
+  },
+  {
+    "id": "c_0007",
+    "mymind_id": "mm_l3m4",
+    "kind": "article",
+    "title": "How Go Modules Work",
+    "url": "https://go.dev/blog/using-go-modules",
+    "excerpt": "A walkthrough of the go.mod file, versioning semantics, and how the Go toolchain resolves dependencies across module versions.",
+    "source": "go.dev",
+    "tags": ["go", "modules", "programming"],
+    "captured_at": "2026-03-23T09:10:00Z"
+  },
+  {
+    "id": "c_0008",
+    "mymind_id": "mm_n5o6",
+    "kind": "quote",
+    "title": "On simplicity",
+    "body": "Simplicity is about subtracting the obvious and adding the meaningful.",
+    "source": "John Maeda",
+    "tags": ["design", "simplicity"],
+    "captured_at": "2026-03-24T16:00:00Z"
+  },
+  {
+    "id": "c_0009",
+    "mymind_id": "mm_p7q8",
+    "kind": "note",
+    "title": "CLI affordance ideas",
+    "body": "Consider: short handles (@1, @2) for card refs. Single-letter kind prefix in list views. Tab-completion for tag names. Pager output for long results. Color should be optional, never required for legibility.",
+    "tags": ["cairn", "ux", "cli"],
+    "captured_at": "2026-03-25T11:55:00Z"
+  },
+  {
+    "id": "c_0010",
+    "mymind_id": "mm_r9s0",
+    "kind": "article",
+    "title": "SQLite as an Application File Format",
+    "url": "https://www.sqlite.org/appfileformat.html",
+    "excerpt": "The case for using SQLite as a container format instead of a custom binary format or a collection of flat files.",
+    "source": "sqlite.org",
+    "tags": ["sqlite", "databases", "storage"],
+    "captured_at": "2026-03-26T14:30:00Z"
+  },
+  {
+    "id": "c_0011",
+    "mymind_id": "mm_t1u2",
+    "kind": "article",
+    "title": "Proof Key for Code Exchange (PKCE)",
+    "url": "https://oauth.net/2/pkce/",
+    "excerpt": "PKCE protects public OAuth 2.0 clients from authorization code interception attacks by binding the token request to the original authorization request via a code verifier and challenge.",
+    "source": "oauth.net",
+    "tags": ["oauth", "auth", "pkce", "security"],
+    "captured_at": "2026-03-27T10:15:00Z"
+  },
+  {
+    "id": "c_0012",
+    "mymind_id": "mm_v3w4",
+    "kind": "image",
+    "title": "Eames lounge chair assembly diagram",
+    "source": "hermanmiller.com",
+    "tags": ["design", "eames", "furniture"],
+    "captured_at": "2026-03-28T09:00:00Z"
+  },
+  {
+    "id": "c_0013",
+    "mymind_id": "mm_x5y6",
+    "kind": "article",
+    "title": "Cobra: A Commander for Modern Go CLIs",
+    "url": "https://github.com/spf13/cobra",
+    "excerpt": "Cobra provides a simple interface for creating powerful modern CLI applications, used by kubectl, GitHub CLI, and Hugo among others.",
+    "source": "github.com",
+    "tags": ["go", "cli", "cobra"],
+    "captured_at": "2026-03-29T13:40:00Z"
+  },
+  {
+    "id": "c_0014",
+    "mymind_id": "mm_z7a8",
+    "kind": "note",
+    "title": "Phase 0 scope boundary",
+    "body": "Phase 0 is fake output only — no real network calls, no sqlite, no embeddings. Every command produces hand-authored output driven by fixture cards. Golden file tests lock the output. This constraint keeps the scope shippable in a weekend.",
+    "tags": ["cairn", "architecture", "phase0"],
+    "captured_at": "2026-03-30T08:20:00Z"
+  },
+  {
+    "id": "c_0015",
+    "mymind_id": "mm_b9c0",
+    "kind": "quote",
+    "title": "On tools",
+    "body": "A tool is something you use to do a job. A good tool gets out of the way.",
+    "source": "Unknown",
+    "tags": ["tools", "craft"],
+    "captured_at": "2026-03-31T17:00:00Z"
+  },
+  {
+    "id": "c_0016",
+    "mymind_id": "mm_d1e2",
+    "kind": "article",
+    "title": "The Go Memory Model",
+    "url": "https://go.dev/ref/mem",
+    "excerpt": "Specifies the conditions under which reads of a variable in one goroutine can be guaranteed to observe values produced by writes to the same variable in a different goroutine.",
+    "source": "go.dev",
+    "tags": ["go", "concurrency", "memory"],
+    "captured_at": "2026-04-01T10:00:00Z"
+  },
+  {
+    "id": "c_0017",
+    "mymind_id": "mm_f3g4",
+    "kind": "image",
+    "title": "Muji wall-mounted CD player, 1999",
+    "source": "muji.com",
+    "tags": ["design", "muji", "fukasawa"],
+    "captured_at": "2026-04-02T14:45:00Z"
+  },
+  {
+    "id": "c_0018",
+    "mymind_id": "mm_h5i6",
+    "kind": "note",
+    "title": "Why device flow for cairn",
+    "body": "Cairn will use device flow for its initial OAuth handshake because the CLI has no embedded browser. The device flow sends the user to a URL on their phone or laptop browser while the CLI polls for token delivery. PKCE layered on top ensures the token exchange can't be intercepted even if the authorization code leaks.",
+    "tags": ["cairn", "auth"],
+    "captured_at": "2026-04-03T09:30:00Z"
+  },
+  {
+    "id": "c_0019",
+    "mymind_id": "mm_j7k8",
+    "kind": "article",
+    "title": "Designing Small Things",
+    "url": "https://www.subtraction.com/designing-small-things/",
+    "excerpt": "Khoi Vinh on why constraints imposed by small surfaces — mobile screens, watch faces, terminal windows — often produce the clearest thinking about what a product is really for.",
+    "source": "subtraction.com",
+    "tags": ["design", "constraints", "product"],
+    "captured_at": "2026-04-04T11:20:00Z"
+  },
+  {
+    "id": "c_0020",
+    "mymind_id": "mm_l9m0",
+    "kind": "note",
+    "title": "Tag taxonomy draft",
+    "body": "Starting tags: auth, design, go, craft, philosophy, cli, databases, security, concurrency. Keep flat — no nested namespaces in Phase 0. Hierarchy can emerge later from co-occurrence patterns.",
+    "tags": ["cairn", "tags", "taxonomy"],
+    "captured_at": "2026-04-05T16:10:00Z"
+  },
+  {
+    "id": "c_0021",
+    "mymind_id": "mm_n1o2",
+    "kind": "quote",
+    "title": "On finishing",
+    "body": "Real artists ship.",
+    "source": "Steve Jobs",
+    "tags": ["craft", "shipping"],
+    "captured_at": "2026-04-06T08:00:00Z"
+  },
+  {
+    "id": "c_0022",
+    "mymind_id": "mm_p3q4",
+    "kind": "article",
+    "title": "embed: Embedding Files in Go Binaries",
+    "url": "https://pkg.go.dev/embed",
+    "excerpt": "The embed package provides access to files embedded in the running Go program at compile time using the //go:embed directive.",
+    "source": "pkg.go.dev",
+    "tags": ["go", "embed", "programming"],
+    "captured_at": "2026-04-07T13:00:00Z"
+  },
+  {
+    "id": "c_0023",
+    "mymind_id": "mm_r5s6",
+    "kind": "image",
+    "title": "Olivetti Lettera 32 typewriter",
+    "source": "design-museum.de",
+    "tags": ["design", "industrial", "writing"],
+    "captured_at": "2026-04-08T10:30:00Z"
+  },
+  {
+    "id": "c_0024",
+    "mymind_id": "mm_t7u8",
+    "kind": "article",
+    "title": "How JSON Became the Universal Data Language",
+    "url": "https://increment.com/apis/how-json-became-the-universal-data-language/",
+    "excerpt": "From Douglas Crockford's specification to RFC 8259, the story of how JSON displaced XML and became the lingua franca of APIs.",
+    "source": "increment.com",
+    "tags": ["json", "apis", "history"],
+    "captured_at": "2026-04-09T15:45:00Z"
+  },
+  {
+    "id": "c_0025",
+    "mymind_id": "mm_v9w0",
+    "kind": "note",
+    "title": "MyMind import notes",
+    "body": "MyMind exports as JSON with fields: id, type, content, url, note, tags, created_at. Need to map: type -> kind (article/image/quote/note), content -> title or body depending on kind, note -> body for articles. created_at is ISO 8601.",
+    "tags": ["cairn", "mymind", "import"],
+    "captured_at": "2026-04-10T09:00:00Z"
+  }
+]
