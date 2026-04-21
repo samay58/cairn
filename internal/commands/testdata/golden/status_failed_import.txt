@@ -1,8 +1,9 @@
 cairn 0.1.0-phase1
 
-library   4 cards · last import <TS> · 0 pending
+library   0 cards · import state failed · 0 pending
 storage   <SIZE> · media cache off
           <TMP>/cairn.db
+sync      last attempt failed · no successful import yet
 mcp       not installed
 clients   none
 

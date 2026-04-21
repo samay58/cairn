@@ -31,7 +31,7 @@ func TestParseCardsCSVHappyPath(t *testing.T) {
 
 func TestParseCardsCSVMalformedRowProducesWarning(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "bad.csv")
-	body := "id,type,title\nmm_1,article,Good\n,,\nmm_3,,Missing type\n"
+	body := "id,type,title,created\nmm_1,article,Good,2026-04-01T00:00:00Z\n,,,\nmm_3,,Missing type,2026-04-01T00:00:00Z\n"
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -154,5 +154,24 @@ func TestParseCardsCSVEmptyTitleNoteAccepted(t *testing.T) {
 	}
 	if !strings.Contains(got[0].Body, "my first note") {
 		t.Errorf("body missing note content: %q", got[0].Body)
+	}
+}
+
+func TestParseCardsCSVInvalidCreatedWarnsAndSkips(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad-created.csv")
+	body := "\xef\xbb\xbfid,type,title,url,content,note,tags,created\n" +
+		"mm_bad,Article,Hello,,Body,,tag,not-a-time\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, warnings, err := ParseCardsCSV(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("got %d cards, want 0", len(got))
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "invalid created") {
+		t.Fatalf("expected invalid created warning, got %v", warnings)
 	}
 }

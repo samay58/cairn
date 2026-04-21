@@ -46,4 +46,8 @@ Phase 2 may introduce finer-grained kinds (e.g. `document`, `video`) once the UI
 
 ## Media
 
-The scanner walks the export root if no `media/` subfolder exists. It skips `cards.csv`, computes SHA-256 + MIME for every remaining file, and stores the result in the `media` table with kind derived from MIME (`image/*` → image, `video/*` → video, `application/pdf` → document, otherwise `other`). Phase 1 does not link media rows back to specific cards; that mapping lands in Phase 2 once the export format exposes it.
+The scanner walks the export root if no `media/` subfolder exists. It skips `cards.csv`, computes SHA-256 + MIME for every remaining file, and stores the result in the `media` table with kind derived from MIME (`image/*` → image, `video/*` → video, `application/pdf` → document, otherwise `other`).
+
+### Per-card linkage (Phase 2a)
+
+MyMind keys attachments by filename: the stem (filename minus extension) equals the card's `id` column in `cards.csv`. Example: attachment `MDE0O3xIKzJh4Y.pdf` belongs to the card whose `id` is `MDE0O3xIKzJh4Y`. Cairn's importer resolves that mapping at import time and stores the card's row id in `media.card_id`. Orphan attachments (no matching card id) produce a warning and are skipped rather than inserted with an empty foreign key. Migration 0002 removes any Phase 1 rows that were written with empty `card_id`; subsequent opens run `PRAGMA foreign_keys = ON` so the constraint enforces.

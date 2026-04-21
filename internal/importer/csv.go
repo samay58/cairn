@@ -111,7 +111,7 @@ func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 	captured := pick(cols, row, "captured_at", "created_at", "created", "date")
 	capturedAt, err := time.Parse(time.RFC3339, captured)
 	if err != nil {
-		capturedAt = time.Now().UTC()
+		return cards.Card{}, false, fmt.Sprintf("invalid created %q", captured)
 	}
 	tagsRaw := pick(cols, row, "tags")
 	var tags []string

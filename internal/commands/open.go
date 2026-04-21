@@ -56,11 +56,7 @@ func launchBrowser(out io.Writer, url string) error {
 		return err
 	}
 	if err := c.Start(); err != nil {
-		_, werr := fmt.Fprintf(out, "Failed to open browser: %v\nURL: %s\n", err, url)
-		if werr != nil {
-			return werr
-		}
-		return nil
+		return fmt.Errorf("open card: launch browser: %w\nurl: %s", err, url)
 	}
 	_, err := fmt.Fprintf(out, "Opened: %s\n", url)
 	return err

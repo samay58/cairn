@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,7 +18,20 @@ type Result struct {
 	Tombstoned int
 	MediaCount int
 	ChunkCount int
+	SkippedRows int
 	Warnings   []string
+}
+
+type cardSnapshot struct {
+	Kind       cards.Kind
+	Title      string
+	URL        string
+	Body       string
+	Excerpt    string
+	Source     string
+	CapturedAt string
+	Tags       []string
+	Deleted    bool
 }
 
 // Import ingests a MyMind export folder into db, returning a summary. Cards
@@ -30,6 +44,11 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	}
 
 	start := time.Now().UTC()
+	if _, err := db.Exec(`UPDATE sync_log
+		SET finished_at = ?, status = 'interrupted'
+		WHERE finished_at IS NULL AND status = 'running'`, start.Format(time.RFC3339)); err != nil {
+		return r, err
+	}
 	syncRes, err := db.Exec(`INSERT INTO sync_log(started_at, status) VALUES (?, 'running')`, start.Format(time.RFC3339))
 	if err != nil {
 		return r, err
@@ -42,16 +61,22 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		return r, err
 	}
 	r.Warnings = append(r.Warnings, parseWarns...)
+	r.SkippedRows = len(parseWarns)
 
-	existing := map[string]bool{}
-	rows, _ := db.Query(`SELECT mymind_id FROM cards WHERE deleted_at IS NULL`)
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err == nil {
-			existing[id] = true
-		}
+	snapshots, active, err := loadSnapshots(db)
+	if err != nil {
+		markSyncFailed(db, syncID, err)
+		return r, err
 	}
-	rows.Close()
+	seen := make(map[string]struct{}, len(parsed))
+	for _, c := range parsed {
+		if _, ok := seen[c.MyMindID]; ok {
+			err := fmt.Errorf("duplicate mymind id %q in cards.csv", c.MyMindID)
+			markSyncFailed(db, syncID, err)
+			return r, err
+		}
+		seen[c.MyMindID] = struct{}{}
+	}
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -66,12 +91,14 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 			markSyncFailed(db, syncID, err)
 			return r, err
 		}
-		if existing[c.MyMindID] {
-			r.Updated++
-			delete(existing, c.MyMindID)
+		if snap, ok := snapshots[c.MyMindID]; ok {
+			if snapshotChanged(snap, c) {
+				r.Updated++
+			}
 		} else {
 			r.Inserted++
 		}
+		delete(active, c.MyMindID)
 		for _, ch := range Chunk(c.Body) {
 			if _, err := tx.Exec(`INSERT INTO chunks(card_id, modality, text, start_offset, end_offset, checksum) VALUES (?, 'text', ?, ?, ?, ?)`,
 				c.ID, ch.Text, ch.StartOffset, ch.EndOffset, ch.Checksum); err != nil {
@@ -83,14 +110,20 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		}
 	}
 
-	// Tombstone everything left in existing.
-	for id := range existing {
+	// Tombstone everything left in active.
+	for id := range active {
 		if _, err := tx.Exec(`UPDATE cards SET deleted_at = ? WHERE mymind_id = ?`, now, id); err != nil {
 			tx.Rollback()
 			markSyncFailed(db, syncID, err)
 			return r, err
 		}
 		r.Tombstoned++
+	}
+
+	if _, err := tx.Exec(`DELETE FROM media`); err != nil {
+		tx.Rollback()
+		markSyncFailed(db, syncID, err)
+		return r, err
 	}
 
 	// Media scan inside the same transaction.
@@ -102,6 +135,12 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	items, scanErr := ScanMedia(mediaRoot)
 	if scanErr != nil {
 		r.Warnings = append(r.Warnings, fmt.Sprintf("media scan: %v", scanErr))
+	}
+	// Build a lookup from MyMind id to the card's row id so media rows land
+	// with the correct foreign key.
+	cardByMyMind := make(map[string]string, len(parsed))
+	for _, c := range parsed {
+		cardByMyMind[c.MyMindID] = c.ID
 	}
 	for _, it := range items {
 		if filepath.Base(it.Path) == "cards.csv" {
@@ -116,8 +155,14 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		case it.Mime == "application/pdf":
 			mediaKind = "document"
 		}
-		if _, err := tx.Exec(`INSERT INTO media(card_id, kind, path, sha256, mime) VALUES ('', ?, ?, ?, ?)`,
-			mediaKind, it.Path, it.SHA256, it.Mime); err != nil {
+		stem := strings.TrimSuffix(filepath.Base(it.Path), filepath.Ext(it.Path))
+		cardID, ok := cardByMyMind[stem]
+		if !ok {
+			r.Warnings = append(r.Warnings, fmt.Sprintf("orphan media %s: no matching card id", filepath.Base(it.Path)))
+			continue
+		}
+		if _, err := tx.Exec(`INSERT INTO media(card_id, kind, path, sha256, mime) VALUES (?, ?, ?, ?, ?)`,
+			cardID, mediaKind, it.Path, it.SHA256, it.Mime); err != nil {
 			r.Warnings = append(r.Warnings, fmt.Sprintf("media insert %s: %v", it.Path, err))
 			continue
 		}
@@ -142,19 +187,98 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	return r, nil
 }
 
-// Note: the media `card_id` column has a foreign key to cards(id), and the
-// empty-string insert above would normally violate it. SQLite's foreign-key
-// enforcement is off by default, which lets the Phase 1 import land media rows
-// without card mapping. Phase 2 will do real card-to-media joining when the
-// export format exposes the linkage. For now this is intentional and noted.
+func loadSnapshots(db *sql.DB) (map[string]cardSnapshot, map[string]bool, error) {
+	rows, err := db.Query(`SELECT mymind_id, kind, title, coalesce(url, ''), coalesce(body, ''),
+		coalesce(excerpt, ''), coalesce(source, ''), captured_at, deleted_at IS NOT NULL
+		FROM cards`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	snapshots := map[string]cardSnapshot{}
+	active := map[string]bool{}
+	for rows.Next() {
+		var myMindID string
+		var snap cardSnapshot
+		var deleted int
+		if err := rows.Scan(&myMindID, &snap.Kind, &snap.Title, &snap.URL, &snap.Body,
+			&snap.Excerpt, &snap.Source, &snap.CapturedAt, &deleted); err != nil {
+			return nil, nil, err
+		}
+		snap.Deleted = deleted != 0
+		snapshots[myMindID] = snap
+		if !snap.Deleted {
+			active[myMindID] = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	tagRows, err := db.Query(`SELECT cards.mymind_id, tags.tag
+		FROM cards JOIN tags ON tags.card_id = cards.id
+		ORDER BY cards.mymind_id, tags.tag`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tagRows.Close()
+
+	for tagRows.Next() {
+		var myMindID, tag string
+		if err := tagRows.Scan(&myMindID, &tag); err != nil {
+			return nil, nil, err
+		}
+		snap := snapshots[myMindID]
+		snap.Tags = append(snap.Tags, tag)
+		snapshots[myMindID] = snap
+	}
+	if err := tagRows.Err(); err != nil {
+		return nil, nil, err
+	}
+	return snapshots, active, nil
+}
+
+func snapshotChanged(snap cardSnapshot, c cards.Card) bool {
+	if snap.Deleted {
+		return true
+	}
+	if snap.Kind != c.Kind ||
+		snap.Title != c.Title ||
+		snap.URL != c.URL ||
+		snap.Body != c.Body ||
+		snap.Excerpt != c.Excerpt ||
+		snap.Source != c.Source ||
+		snap.CapturedAt != c.CapturedAt.Format(time.RFC3339) {
+		return true
+	}
+	return !equalTags(snap.Tags, c.Tags)
+}
+
+func equalTags(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	leftCopy := append([]string(nil), left...)
+	rightCopy := append([]string(nil), right...)
+	sort.Strings(leftCopy)
+	sort.Strings(rightCopy)
+	for i := range leftCopy {
+		if leftCopy[i] != rightCopy[i] {
+			return false
+		}
+	}
+	return true
+}
 
 func upsertCard(tx *sql.Tx, c cards.Card, updatedAt string) error {
 	if _, err := tx.Exec(`INSERT INTO cards(id, mymind_id, kind, title, url, body, excerpt, source, captured_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(mymind_id) DO UPDATE SET
-			title = excluded.title,
-			url = excluded.url,
-			body = excluded.body,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(mymind_id) DO UPDATE SET
+				kind = excluded.kind,
+				title = excluded.title,
+				url = excluded.url,
+				body = excluded.body,
 			excerpt = excluded.excerpt,
 			source = excluded.source,
 			captured_at = excluded.captured_at,

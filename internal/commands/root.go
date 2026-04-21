@@ -22,6 +22,7 @@ func NewRoot() *cobra.Command {
 }
 
 func NewRootWithSource(src source.Source) *cobra.Command {
+	fixture := source.NewFixtureSource()
 	root := &cobra.Command{
 		Use:           "cairn",
 		Short:         "Terminal-native bridge between MyMind and the tools you already use",
@@ -34,10 +35,10 @@ func NewRootWithSource(src source.Source) *cobra.Command {
 		newImportCmd(),
 		newStatusCmd(src),
 		newSearchCmd(src),
-		newFindCmd(src),
+		newFindCmd(fixture),
 		newGetCmd(src),
 		newOpenCmd(src),
-		newPackCmd(src),
+		newPackCmd(fixture),
 		newAskCmd(),
 		newExportCmd(src),
 		newConfigCmd(),

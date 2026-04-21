@@ -1,4 +1,3 @@
-Error: import failed.
-
-Could not read export directory: /tmp/does-not-exist-x9z9z
-Check the path and try again.
+import failed: read export directory
+detail: stat /tmp/does-not-exist-x9z9z: no such file or directory
+last good: no successful import yet

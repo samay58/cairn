@@ -26,6 +26,11 @@ type statusView struct {
 		State   string   `json:"state"`
 		Clients []string `json:"clients"`
 	} `json:"mcp"`
+	Sync struct {
+		State    string `json:"state"`
+		LastGood string `json:"last_good"`
+		Detail   string `json:"detail,omitempty"`
+	} `json:"sync"`
 	Permissions string `json:"permissions"`
 	Phase       string `json:"phase"`
 }
@@ -58,6 +63,8 @@ func newStatusCmd(src source.Source) *cobra.Command {
 }
 
 func buildStatusView(src source.Source) statusView {
+	dbPath := cairnDBPath()
+	sync := readSyncState(dbPath)
 	status := statusView{
 		Version:     "cairn 0.1.0-phase1",
 		Permissions: "Default search and related allow. Full content prompts.",
@@ -66,16 +73,26 @@ func buildStatusView(src source.Source) statusView {
 	status.Library.Cards = src.Count()
 	status.MCP.State = "not installed"
 	status.MCP.Clients = []string{}
+	status.Sync.State = syncStateLabel(sync)
+	status.Sync.LastGood = lastGoodLabel(sync)
+	status.Sync.Detail = latestFailureDetail(sync)
 
-	if ts, ok := src.LastImport(); ok {
-		status.Library.LastImport = ts.Format("2006-01-02T15:04:05Z")
-		status.Storage.Path = cairnDBPath()
-		status.Storage.Size = dbSizeHuman(status.Storage.Path)
-		status.Storage.MediaCache = "off"
-	} else {
+	switch {
+	case !sync.HasDB:
 		status.Library.LastImport = "none"
 		status.Storage.Path = "run `cairn import <path>` to create a database"
 		status.Storage.Size = "0 B"
+		status.Storage.MediaCache = "off"
+	case hasSuccessfulImport(src):
+		ts, _ := src.LastImport()
+		status.Library.LastImport = ts.Format("2006-01-02T15:04:05Z")
+		status.Storage.Path = dbPath
+		status.Storage.Size = dbSizeHuman(status.Storage.Path)
+		status.Storage.MediaCache = "off"
+	default:
+		status.Library.LastImport = "none"
+		status.Storage.Path = dbPath
+		status.Storage.Size = dbSizeHuman(status.Storage.Path)
 		status.Storage.MediaCache = "off"
 	}
 	status.Library.Pending = 0
@@ -86,18 +103,37 @@ func writeStatusPlain(out io.Writer, s statusView) error {
 	if _, err := fmt.Fprintf(out, "%s\n\n", s.Version); err != nil {
 		return err
 	}
-	if s.Library.LastImport == "none" {
+	switch {
+	case s.Storage.Path == "run `cairn import <path>` to create a database":
 		if _, err := fmt.Fprintf(out, "library   %d cards (fixtures; no database yet)\n", s.Library.Cards); err != nil {
 			return err
 		}
 		if _, err := fmt.Fprintf(out, "storage   %s\n", s.Storage.Path); err != nil {
 			return err
 		}
-	} else {
+	case s.Library.LastImport != "none":
 		if _, err := fmt.Fprintf(out, "library   %d cards · last import %s · %d pending\n", s.Library.Cards, s.Library.LastImport, s.Library.Pending); err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(out, "storage   %s (%s) · media cache %s\n", s.Storage.Path, s.Storage.Size, s.Storage.MediaCache); err != nil {
+		if err := writeStorageLocation(out, s.Storage.Path, s.Storage.Size, s.Storage.MediaCache); err != nil {
+			return err
+		}
+	default:
+		if _, err := fmt.Fprintf(out, "library   %d cards · import state %s · %d pending\n", s.Library.Cards, s.Sync.State, s.Library.Pending); err != nil {
+			return err
+		}
+		if err := writeStorageLocation(out, s.Storage.Path, s.Storage.Size, s.Storage.MediaCache); err != nil {
+			return err
+		}
+	}
+	if s.Library.LastImport == "none" && s.Storage.Path != "run `cairn import <path>` to create a database" {
+		line := "sync      last attempt " + s.Sync.State
+		if s.Sync.LastGood != "" && s.Sync.LastGood != "no successful import yet" {
+			line += " · last good " + s.Sync.LastGood
+		} else {
+			line += " · no successful import yet"
+		}
+		if _, err := fmt.Fprintln(out, line); err != nil {
 			return err
 		}
 	}
@@ -128,4 +164,9 @@ func dbSizeHuman(path string) string {
 	default:
 		return fmt.Sprintf("%.1f MB", float64(n)/1024/1024)
 	}
+}
+
+func hasSuccessfulImport(src source.Source) bool {
+	_, ok := src.LastImport()
+	return ok
 }

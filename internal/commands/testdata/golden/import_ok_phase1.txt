@@ -2,5 +2,6 @@ Reading export from ../../testdata/mymind_sample_export
 Parsed 4 cards; 4 inserted, 0 updated, 0 tombstoned.
 Media: 1 files. Chunks: 3.
 
-Database at <TMP>/cairn.db.
+Database at
+  <TMP>/cairn.db
 Run `cairn search "<query>"` or `cairn find`.
