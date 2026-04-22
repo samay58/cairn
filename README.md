@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/cairn-cover.png" alt="Cairn: a stack of stone-bound volumes marking the trail, with more cairns receding along the ridge" width="800">
+</p>
+
 # Cairn
 
 A terminal-native bridge between MyMind and the tools I actually work in.
