@@ -48,6 +48,32 @@ go build -o cairn ./cmd/cairn
 
 `CAIRN_HOME` overrides the default `~/.cairn/` state directory if you want to sandbox a run.
 
+## Phoenix workflow
+
+Keep the raw MyMind export in:
+
+```text
+~/phoenix/Clippings/mymind
+```
+
+Mirror generated markdown into:
+
+```text
+~/phoenix/04-knowledge-base/research-archive/mymind-cards
+```
+
+The default `cairn export` target is the Knowledge Base mirror path above. Do
+not export into `~/phoenix/Clippings/MyMind`: on macOS that collides with the
+raw `Clippings/mymind` folder.
+
+```bash
+cairn import ~/phoenix/Clippings/mymind
+cairn status
+cairn search "something you remember saving"
+cairn export
+cd ~/phoenix && qmd update
+```
+
 ## License
 
 MIT. See `LICENSE`.
