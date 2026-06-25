@@ -17,15 +17,23 @@ type statusView struct {
 		LastImport string `json:"last_import"`
 		Pending    int    `json:"pending"`
 	} `json:"library"`
+	Import  importSummary `json:"import"`
+	Export  exportSummary `json:"export"`
 	Storage struct {
-		Path       string `json:"path"`
-		Size       string `json:"size"`
-		MediaCache string `json:"media_cache"`
+		Path                string `json:"path"`
+		Size                string `json:"size"`
+		MediaCache          string `json:"media_cache"`
+		MediaSourcesMissing int    `json:"media_sources_missing"`
 	} `json:"storage"`
 	MCP struct {
 		State   string   `json:"state"`
 		Clients []string `json:"clients"`
 	} `json:"mcp"`
+	Commands struct {
+		Real           []string `json:"real"`
+		NotImplemented []string `json:"not_implemented"`
+		Designed       []string `json:"designed"`
+	} `json:"commands"`
 	Sync struct {
 		State    string `json:"state"`
 		LastGood string `json:"last_good"`
@@ -66,13 +74,18 @@ func buildStatusView(src source.Source) statusView {
 	dbPath := cairnDBPath()
 	sync := readSyncState(dbPath)
 	status := statusView{
-		Version:     "cairn 0.1.0-phase1",
+		Version:     "cairn 0.1.0-phase2a",
 		Permissions: "Default search and related allow. Full content prompts.",
-		Phase:       "Phase 1. Import-backed search. Other commands ship later.",
+		Phase:       "Phase 2a. Import, search, get, open, and export are real.",
 	}
 	status.Library.Cards = src.Count()
+	status.Import = readLastImportSummary(dbPath)
+	status.Export = readLastExportSummary(dbPath)
 	status.MCP.State = "not installed"
 	status.MCP.Clients = []string{}
+	status.Commands.Real = []string{"import", "status", "search", "get", "open", "export"}
+	status.Commands.NotImplemented = []string{"find", "pack", "ask", "mcp"}
+	status.Commands.Designed = []string{"config"}
 	status.Sync.State = syncStateLabel(sync)
 	status.Sync.LastGood = lastGoodLabel(sync)
 	status.Sync.Detail = latestFailureDetail(sync)
@@ -89,11 +102,13 @@ func buildStatusView(src source.Source) statusView {
 		status.Storage.Path = dbPath
 		status.Storage.Size = dbSizeHuman(status.Storage.Path)
 		status.Storage.MediaCache = "off"
+		status.Storage.MediaSourcesMissing = missingMediaSourceCount(dbPath)
 	default:
 		status.Library.LastImport = "none"
 		status.Storage.Path = dbPath
 		status.Storage.Size = dbSizeHuman(status.Storage.Path)
 		status.Storage.MediaCache = "off"
+		status.Storage.MediaSourcesMissing = missingMediaSourceCount(dbPath)
 	}
 	status.Library.Pending = 0
 	return status
@@ -137,10 +152,50 @@ func writeStatusPlain(out io.Writer, s statusView) error {
 			return err
 		}
 	}
+	if s.Import.ValidCards > 0 {
+		if _, err := fmt.Fprintf(out, "import    %d read · %d valid · %d skipped · %d warnings\n",
+			s.Import.RowsRead, s.Import.ValidCards, s.Import.SkippedRows, s.Import.Warnings); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(out, "changes   %d inserted · %d updated · %d unchanged · %d tombstoned\n",
+			s.Import.Inserted, s.Import.Updated, s.Import.Unchanged, s.Import.Tombstoned); err != nil {
+			return err
+		}
+		if s.Storage.MediaSourcesMissing > 0 {
+			if _, err := fmt.Fprintf(out, "media     %d source files missing\n", s.Storage.MediaSourcesMissing); err != nil {
+				return err
+			}
+		}
+	}
+	if s.Export.TargetPath != "" {
+		if _, err := fmt.Fprintf(out, "export    %s · %d cards · %d media · %d warnings\n",
+			s.Export.Status,
+			s.Export.CardsWritten+s.Export.CardsUnchanged,
+			s.Export.MediaWritten+s.Export.MediaSkipped,
+			s.Export.Warnings); err != nil {
+			return err
+		}
+		for _, line := range wrapFilesystemPath("          ", s.Export.TargetPath, render.DefaultWidth) {
+			if _, err := fmt.Fprintln(out, line); err != nil {
+				return err
+			}
+		}
+		if isDefaultPhoenixExportPath(s.Export.TargetPath) {
+			if _, err := fmt.Fprintln(out, "qmd       cd ~/phoenix && qmd update"); err != nil {
+				return err
+			}
+		}
+	}
 	if _, err := fmt.Fprintf(out, "mcp       %s\n", s.MCP.State); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintln(out, "clients   none"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(out, "commands  real: import, status, search, get, open, export"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(out, "          not implemented: find, pack, ask, mcp"); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintln(out); err != nil {

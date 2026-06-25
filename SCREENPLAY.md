@@ -1,14 +1,17 @@
 # Cairn first-run walkthrough
 
-Phase 1 ships real import, status, search, get, and open backed by SQLite. Find, pack, ask, export, mcp, and config are still Phase 0 fakes; each section below that covers them notes which phase makes it real.
+Cairn is currently Phase 2a. Import, status, search, get, open, and export
+are real. Find, pack, ask, and MCP are designed surfaces that are not
+implemented for imported libraries yet.
 
-Every fenced output block in the import through open sections was captured by running the binary against `testdata/mymind_sample_export/` with a fresh `CAIRN_HOME`. If you clone the repo and run the same commands you will see the same output.
+Every output block below was captured against `testdata/mymind_sample_export`
+with a fresh `CAIRN_HOME`.
 
 ---
 
-## Importing your mymind export
+## Import
 
-You have just downloaded your mymind export. Run `cairn import` and point it at the folder.
+You have downloaded a MyMind export. Point Cairn at the export folder.
 
 ```console
 $ cairn import testdata/mymind_sample_export
@@ -16,43 +19,53 @@ $ cairn import testdata/mymind_sample_export
 
 ```
 Reading export from testdata/mymind_sample_export
-Parsed 4 cards; 4 inserted, 0 updated, 0 tombstoned.
+Rows: 4 read, 4 valid, 0 skipped.
+Cards: 4 inserted, 0 updated, 0 unchanged, 0 tombstoned.
 Media: 1 files. Chunks: 3.
 
-Database at ~/.cairn/cairn.db.
+Database at
+  ~/.cairn/cairn.db
 Run `cairn search "<query>"` or `cairn find`.
 ```
 
-Cards are inserted once per import. On subsequent runs the importer matches by mymind ID and emits updated or tombstoned counts instead of inserted. Media files land next to the database; the chunk count reflects FTS5 index rows, not file count.
+The row count is the CSV count. The card counts show what changed in the
+database on this run. A no-op re-import should show valid rows and unchanged
+cards, not pretend nothing was parsed.
 
 ---
 
-## Checking the library state
+## Status
 
-`cairn status` gives a one-screen overview of what is loaded, where data lives, and whether the MCP server is wired up.
+`cairn status` is the agent-readable control panel: what was imported, what
+was exported, and which commands are production surfaces.
 
 ```console
 $ cairn status
 ```
 
 ```
-cairn 0.1.0-phase1
+cairn 0.1.0-phase2a
 
-library   4 cards · last import 2026-04-21T16:22:11Z · 0 pending
-storage   ~/.cairn/cairn.db (96.0 KB) · media cache off
+library   4 cards · last import 2026-06-25T18:08:15Z · 0 pending
+storage   104.0 KB · media cache off
+          ~/.cairn/cairn.db
+import    4 read · 4 valid · 0 skipped · 0 warnings
+changes   4 inserted · 0 updated · 0 unchanged · 0 tombstoned
 mcp       not installed
 clients   none
+commands  real: import, status, search, get, open, export
+          not implemented: find, pack, ask, mcp
 
-Phase 1. Import-backed search. Other commands ship later.
+Phase 2a. Import, search, get, open, and export are real.
 ```
 
-The timestamp is ISO 8601 UTC. The storage line shows actual file size; the 96 KB for four sample cards gives a sense of overhead before the library grows.
+Use `cairn status --json` when another tool needs to decide the next action.
 
 ---
 
-## Searching for a topic
+## Search
 
-You saved a quote about craft and want to find it again. Search by keyword.
+Search by whatever you remember from the saved card.
 
 ```console
 $ cairn search "craft"
@@ -65,9 +78,10 @@ $ cairn search "craft"
     The way you do anything is the way you do everything.
 ```
 
-The `@N` handle refers to position in this result list and persists across commands. A subsequent `get @1` or `open @1` in the same session resolves to this card via the `handles` table in SQLite; Phase 0 mapped handles positionally from a fixture list, so the cross-command link is one of the things Phase 1 actually ships.
+The `@N` handle refers to the most recent list. A later `get @1` or
+`open @1` resolves through SQLite, not fixture position.
 
-Search accepts filter prefixes. To restrict to notes only:
+Filters work inline:
 
 ```console
 $ cairn search "type:note"
@@ -82,9 +96,9 @@ $ cairn search "type:note"
 
 ---
 
-## Reading a card in full
+## Get
 
-After the search above, `@1` refers to the craft quote. `cairn get @1` prints the full record.
+After the search above, `@1` refers to the craft quote.
 
 ```console
 $ cairn get @1
@@ -99,9 +113,10 @@ The way you do anything is the way you do everything.
 
 ---
 
-## Opening a card in the browser
+## Open
 
-`cairn open @1` launches the URL in your default OS browser. To preview the URL without opening a browser, set `CAIRN_DRY_OPEN=1`.
+`cairn open @1` launches the URL in the default OS browser. Tests and dry
+runs can set `CAIRN_DRY_OPEN=1`.
 
 ```console
 $ CAIRN_DRY_OPEN=1 cairn open @1
@@ -111,133 +126,38 @@ $ CAIRN_DRY_OPEN=1 cairn open @1
 Would open: https://access.mymind.com/cards/mm_2
 ```
 
-In normal use, omit the env var; the binary calls the OS `open` command (macOS) or `xdg-open` (Linux) and returns immediately.
+---
+
+## Export
+
+`cairn export` mirrors the imported library into Phoenix markdown. The default
+target is `~/phoenix/04-knowledge-base/research-archive/mymind-cards`.
+
+```console
+$ cairn export
+```
+
+```
+Wrote 4 cards to ~/phoenix/04-knowledge-base/research-archive/mymind-cards
+  media: 1 written, 0 skipped
+  mirror: 4 cards, 1 media files
+Next: cd ~/phoenix && qmd update
+```
+
+The raw MyMind export should stay in `~/phoenix/Clippings/mymind`. Cairn
+refuses to export into the last import path, including case-only collisions
+such as `MyMind` vs `mymind` on macOS.
 
 ---
 
-## The rest of Phase 0
+## Designed But Not Implemented
 
-The following commands shipped in Phase 0 as fakes. They remain unchanged below while their respective phases complete.
+These commands are intentionally honest until their phases earn implementation:
 
-- `cairn find`: static TUI mock. Real keyboard-navigable browser ships in Phase 2.
-- `cairn pack` and `cairn export`: dry-run output. Real context packing and phoenix vault mirror ship in Phase 2.
-- `cairn mcp install`, `cairn mcp start`, `cairn mcp audit`, `cairn mcp permissions`: stub and preview output. Real JSON-RPC MCP server ships in Phase 3.
-- `cairn ask`: stub redirecting to `pack`. Natural language question answering over the library ships in Phase 4.
-- `cairn config`: shows defaults. No Phase assigned; behavior may stay as-is.
+- `cairn find`: no real TUI for imported libraries yet.
+- `cairn pack`: no real context pack for imported libraries yet.
+- `cairn ask`: Phase 4, after the Phase 3 integrity gate.
+- `cairn mcp *`: Phase 3.
+- `cairn config`: defaults preview only.
 
-### Browsing the full library
-
-`cairn find` opens a static mock of the TUI browser. Phase 2 makes this interactive.
-
-```console
-$ cairn find
-```
-
-```
-cairn find · 25 cards · type: all  source: all  since: all
-
-› _
-
-@1  OAuth 2.0 Device Authorization Grant
-    a · datatracker.ietf.org · 2026-03-14
-    recent
-    Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.
-
-@2  On craft
-    q · Martha Beck · 2026-03-18
-    recent
-    The way you do anything is the way you do everything.
-
-@3  Dieter Rams desk, 1970s
-    i · vitsoe.com · 2026-03-20
-    recent
-
-enter open url · o open in mymind · c copy · y yank · tab cycle filters · esc quit
-
-Phase 0: this is a static mock. Real TUI lands in Phase 2.
-```
-
-### Packing cards for an AI context window
-
-`cairn pack` takes a query and a target profile, then formats the matching cards as a ready-to-paste context block. The `--for claude` profile emits XML that Claude reads natively.
-
-```console
-$ cairn pack "oauth device flow" --for claude
-```
-
-```
-<context source="cairn" query="oauth device flow" cards="3">
-  <card id="c_0001" kind="article" captured="2026-03-14" source="datatracker.ietf.org">
-    <title>OAuth 2.0 Device Authorization Grant</title>
-    <url>https://datatracker.ietf.org/doc/html/rfc8628</url>
-    <excerpt>Describes the OAuth 2.0 device authorization grant flow for browserless and input-constrained devices.</excerpt>
-  </card>
-  <card id="c_0011" kind="article" captured="2026-03-27" source="oauth.net">
-    <title>Proof Key for Code Exchange (PKCE)</title>
-    <url>https://oauth.net/2/pkce/</url>
-    <excerpt>PKCE protects public OAuth 2.0 clients from authorization code interception attacks by binding the token request to the original authorization request via a code verifier and challenge.</excerpt>
-  </card>
-  <card id="c_0018" kind="note" captured="2026-04-03" source="">
-    <title>Why device flow for cairn</title>
-    <excerpt>Cairn will use device flow for its initial OAuth handshake because the CLI has no embedded browser. The device flow sends the user to a URL on their phone or laptop browser while the CLI polls for token delivery. PKCE layered on top ensures the token exchange can't be intercepted even if the authorization code leaks.</excerpt>
-  </card>
-</context>
-
-Citation key: c_0001, c_0011, c_0018.
-```
-
-Paste the output directly into a Claude conversation as context before asking your question.
-
-### Installing the MCP server in Claude Code
-
-`cairn mcp install claude-code` previews the config merge without touching the file. Phase 3 performs the real write.
-
-```console
-$ cairn mcp install claude-code
-```
-
-```
-Installing cairn MCP server for claude-code.
-
-Target config: ~/.claude/mcp.json
-Existing servers detected: 2 (brave-search, filesystem)
-
-Proposed merge (new keys only):
-  mcpServers.cairn = {
-    "command": "cairn",
-    "args": ["mcp", "start"]
-  }
-
-Phase 0 would write this merge. Real install runs in Phase 3.
-Run `cairn mcp permissions` to review tool-level scopes.
-```
-
-### Auditing MCP access
-
-After install, `cairn mcp audit` shows a chronological log of which AI clients searched your library and what they retrieved.
-
-```console
-$ cairn mcp audit
-```
-
-```
-Today
-
-  10:42  Claude Code searched "OAuth MCP authorization"
-         Returned 5 snippets
-
-  10:43  Claude Code requested full content for @2
-         Allowed once by user
-
-  10:49  Cursor searched "SQLite FTS5"
-         Returned 8 snippets
-
-Yesterday
-
-  22:11  Claude Desktop searched "prompt injection mitigations"
-         Returned 4 snippets
-
-Phase 0: sample audit rows. Real log reads from the mcp_audit table in Phase 3.
-```
-
-The audit log is the primary tool for reviewing what context your AI clients have been pulling from your library.
+For now, use `search`, `get`, and the Phoenix mirror as the production path.

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/samay58/cairn/internal/source"
 )
 
 // setupImportedRoot imports testdata/mymind_sample_export into a temp
@@ -106,5 +108,68 @@ func TestExportFreshInstallRefusesWithoutImport(t *testing.T) {
 	entries, _ := os.ReadDir(vault)
 	if len(entries) != 0 {
 		t.Fatalf("fresh install wrote %d entries, want 0", len(entries))
+	}
+}
+
+func TestDefaultExportRootUsesKnowledgeBaseMirror(t *testing.T) {
+	root := defaultExportRoot()
+	wantSuffix := filepath.Join("phoenix", "04-knowledge-base", "research-archive", "mymind-cards")
+	if !strings.HasSuffix(root, wantSuffix) {
+		t.Fatalf("default export root = %q, want suffix %q", root, wantSuffix)
+	}
+}
+
+func TestExportRefusesCaseInsensitiveImportPathCollision(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CAIRN_HOME", home)
+
+	parent := filepath.Join(t.TempDir(), "Clippings")
+	importDir := filepath.Join(parent, "mymind")
+	if err := os.MkdirAll(importDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	copySampleExport(t, importDir)
+
+	root := NewRootWithSource(source.NewFixtureSource())
+	root.SetArgs([]string{"import", importDir})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := buildRootForCurrentDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	root.SetOut(&buf)
+	root.SetErr(&buf)
+	root.SetArgs([]string{"export", "--to", filepath.Join(parent, "MyMind")})
+	err = root.Execute()
+	if err == nil {
+		t.Fatalf("expected collision error, got output:\n%s", buf.String())
+	}
+	if !strings.Contains(err.Error(), "export target matches the last import path") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func copySampleExport(t *testing.T, dest string) {
+	t.Helper()
+	src := filepath.Join("..", "..", "testdata", "mymind_sample_export")
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(src, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dest, entry.Name()), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

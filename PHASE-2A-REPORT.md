@@ -52,3 +52,18 @@ markdown is opened in Obsidian in at least three different contexts
 within a week (drafting, Claude Code lookup, knowledge-graph linking),
 continue to Phase 2b (`cairn pack`). Otherwise stop and reassess which
 surface earns the next slot.
+
+**June 25 tightening.** A fresh MyMind export exposed 357 rows and 4 PDFs.
+Newer MyMind types (`XPost`, `Movie`, `Repository`, `WikipediaArticle`,
+`TVSeries`, `VideoGame`, `RedditPost`, `Placeholder`, `Business`,
+`Product`) now map to `article`, and future unknown kinds fall back to
+`article` with a warning instead of disappearing. Import output now
+separates rows read, valid cards, inserts, updates, unchanged cards,
+tombstones, skipped rows, and warnings. `cairn status` reads durable
+import/export summaries, shows command availability, and reports the
+last Phoenix export. The default mirror target moved to
+`~/phoenix/04-knowledge-base/research-archive/mymind-cards` to keep
+generated markdown out of the raw export folder and avoid the macOS
+`MyMind`/`mymind` collision. `find` and `pack` no longer emit fixture
+content against an imported library; they say they are not implemented
+yet.

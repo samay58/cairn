@@ -11,14 +11,27 @@ import (
 	"github.com/samay58/cairn/internal/cards"
 )
 
+type CSVResult struct {
+	Cards       []cards.Card
+	RowsRead    int
+	SkippedRows int
+	Warnings    []string
+}
+
 // ParseCardsCSV reads a MyMind-style cards.csv. Column names match
 // case-insensitively and accept synonyms (body ≡ text ≡ content). Rows missing
 // id, kind, or title produce a warning and are skipped rather than failing the
 // whole import.
 func ParseCardsCSV(path string) ([]cards.Card, []string, error) {
+	result, err := ParseCardsCSVDetailed(path)
+	return result.Cards, result.Warnings, err
+}
+
+func ParseCardsCSVDetailed(path string) (CSVResult, error) {
+	var result CSVResult
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return result, err
 	}
 	defer f.Close()
 
@@ -27,31 +40,35 @@ func ParseCardsCSV(path string) ([]cards.Card, []string, error) {
 
 	header, err := r.Read()
 	if err != nil {
-		return nil, nil, fmt.Errorf("read header: %w", err)
+		return result, fmt.Errorf("read header: %w", err)
 	}
 	cols := normalizeHeader(header)
 
-	var out []cards.Card
-	var warnings []string
 	lineNo := 1
 	for {
 		row, err := r.Read()
 		if err == io.EOF {
 			break
 		}
+		result.RowsRead++
 		lineNo++
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("line %d: %v", lineNo, err))
+			result.SkippedRows++
+			result.Warnings = append(result.Warnings, fmt.Sprintf("line %d: %v", lineNo, err))
 			continue
 		}
 		c, ok, warn := rowToCard(cols, row)
 		if !ok {
-			warnings = append(warnings, fmt.Sprintf("line %d: %s", lineNo, warn))
+			result.SkippedRows++
+			result.Warnings = append(result.Warnings, fmt.Sprintf("line %d: %s", lineNo, warn))
 			continue
 		}
-		out = append(out, c)
+		if warn != "" {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("line %d: %s", lineNo, warn))
+		}
+		result.Cards = append(result.Cards, c)
 	}
-	return out, warnings, nil
+	return result, nil
 }
 
 // utf8BOM is the UTF-8 byte order mark that some exporters (including MyMind)
@@ -78,16 +95,26 @@ func pick(cols map[string]int, row []string, names ...string) string {
 
 // kindAliases maps MyMind type values (lowercased, no spaces) to cairn Kind.
 var kindAliases = map[string]cards.Kind{
-	"article":      cards.KindArticle,
-	"webpage":      cards.KindArticle,
-	"document":     cards.KindArticle,
-	"embed":        cards.KindArticle,
-	"youtubevideo": cards.KindArticle,
-	"link":         cards.KindArticle,
-	"image":        cards.KindImage,
-	"photo":        cards.KindImage,
-	"quote":        cards.KindQuote,
-	"note":         cards.KindNote,
+	"article":          cards.KindArticle,
+	"business":         cards.KindArticle,
+	"webpage":          cards.KindArticle,
+	"document":         cards.KindArticle,
+	"embed":            cards.KindArticle,
+	"movie":            cards.KindArticle,
+	"placeholder":      cards.KindArticle,
+	"product":          cards.KindArticle,
+	"redditpost":       cards.KindArticle,
+	"repository":       cards.KindArticle,
+	"tvseries":         cards.KindArticle,
+	"videogame":        cards.KindArticle,
+	"wikipediaarticle": cards.KindArticle,
+	"xpost":            cards.KindArticle,
+	"youtubevideo":     cards.KindArticle,
+	"link":             cards.KindArticle,
+	"image":            cards.KindImage,
+	"photo":            cards.KindImage,
+	"quote":            cards.KindQuote,
+	"note":             cards.KindNote,
 }
 
 func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
@@ -100,11 +127,13 @@ func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 
 	kindLower := strings.ToLower(strings.ReplaceAll(kindRaw, " ", ""))
 	kind, err := cards.KindFromString(kindLower)
+	fellBackKind := false
 	if err != nil {
 		if k, ok := kindAliases[kindLower]; ok {
 			kind = k
 		} else {
-			return cards.Card{}, false, fmt.Sprintf("unknown kind %q", kindRaw)
+			kind = cards.KindArticle
+			fellBackKind = true
 		}
 	}
 
@@ -138,6 +167,11 @@ func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 		body = body + "\n\nNote: " + note
 	}
 
+	warn := ""
+	if fellBackKind {
+		warn = fmt.Sprintf("unknown kind %q treated as article", kindRaw)
+	}
+
 	return cards.Card{
 		ID:         id,
 		MyMindID:   id,
@@ -149,5 +183,5 @@ func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 		Source:     pick(cols, row, "source", "domain"),
 		Tags:       tags,
 		CapturedAt: capturedAt,
-	}, true, ""
+	}, true, warn
 }

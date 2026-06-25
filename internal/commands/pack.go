@@ -30,7 +30,7 @@ type packLine struct {
 func newPackCmd(src source.Source) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pack <query>",
-		Short: "Cited context pack for an external AI",
+		Short: "Context pack preview (not implemented for imported libraries)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mode, err := selectedOutputMode(cmd)
@@ -40,6 +40,10 @@ func newPackCmd(src source.Source) *cobra.Command {
 			limit, err := limitValue(cmd)
 			if err != nil {
 				return err
+			}
+			if hasSuccessfulImport(src) {
+				return writeNotImplemented(cmd.OutOrStdout(), "`cairn pack` is not implemented for imported libraries yet.",
+					"Use `cairn search <query> --json` or export the Phoenix mirror for now.")
 			}
 
 			query := strings.Join(args, " ")

@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -19,5 +20,19 @@ func TestScanMediaHashesAndDetectsMime(t *testing.T) {
 	}
 	if len(items[0].SHA256) != 64 {
 		t.Errorf("sha256 = %q (len %d), want 64 hex chars", items[0].SHA256, len(items[0].SHA256))
+	}
+}
+
+func TestScanMediaIgnoresDotfiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, ".DS_Store"), []byte("finder"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	items, err := ScanMedia(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("got %d media items, want 0", len(items))
 	}
 }

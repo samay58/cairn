@@ -14,4 +14,4 @@ Yesterday
   22:11  Claude Desktop searched "prompt injection mitigations"
          Returned 4 snippets
 
-Phase 0: sample audit rows. Real log reads from the mcp_audit table in Phase 3.
+Preview rows only. Real audit logs wait on Phase 3.

@@ -1,6 +1,6 @@
-cairn mcp server (stdio). Phase 0 fake.
+`cairn mcp start` is not implemented yet.
 
-Would expose 5 tools:
+Designed tools:
   search_mind(query, limit?, filters?)
   get_card(card_id, include_full_text?)
   get_related(card_id, limit?)
@@ -11,4 +11,4 @@ Client config:
   claude-code     not installed
   claude-desktop  not installed
 
-Phase 0 exits immediately. Real server runs in Phase 3.
+The real server waits on Phase 3.

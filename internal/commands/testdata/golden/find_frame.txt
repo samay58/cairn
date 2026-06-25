@@ -21,4 +21,4 @@ cairn find · 25 cards · type: all  source: all  since: all
 enter open url · o open in mymind · c copy · y yank
 tab cycle filters · esc quit
 
-Phase 0: this is a static mock. Real TUI lands in Phase 2.
+Preview only. Real TUI is not implemented yet.

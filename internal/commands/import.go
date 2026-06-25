@@ -45,8 +45,10 @@ func newImportCmd() *cobra.Command {
 			if err != nil {
 				return formatImportError("ingest export", err, readSyncState(dbPath))
 			}
-			fmt.Fprintf(out, "Parsed %d cards; %d inserted, %d updated, %d tombstoned.\n",
-				result.Inserted+result.Updated, result.Inserted, result.Updated, result.Tombstoned)
+			fmt.Fprintf(out, "Rows: %d read, %d valid, %d skipped.\n",
+				result.RowsRead, result.ValidCards, result.SkippedRows)
+			fmt.Fprintf(out, "Cards: %d inserted, %d updated, %d unchanged, %d tombstoned.\n",
+				result.Inserted, result.Updated, result.Unchanged, result.Tombstoned)
 			fmt.Fprintf(out, "Media: %d files. Chunks: %d.\n", result.MediaCount, result.ChunkCount)
 			switch {
 			case result.SkippedRows > 0:

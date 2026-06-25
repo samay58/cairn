@@ -43,7 +43,7 @@ go build -o cairn ./cmd/cairn
 ./cairn import /path/to/your/mymind/export
 ./cairn status
 ./cairn search "something you remember saving"
-./cairn export --to ~/phoenix/Clippings/MyMind
+./cairn export --to ~/phoenix/04-knowledge-base/research-archive/mymind-cards
 ```
 
 `CAIRN_HOME` overrides the default `~/.cairn/` state directory if you want to sandbox a run.

@@ -35,7 +35,7 @@ type mcpPermissionSet struct {
 func newMCPCmd() *cobra.Command {
 	mcp := &cobra.Command{
 		Use:   "mcp",
-		Short: "MCP server, install, audit, permissions",
+		Short: "MCP server, install, audit, permissions (not implemented yet)",
 	}
 	mcp.AddCommand(newMCPStartCmd(), newMCPInstallCmd(), newMCPAuditCmd(), newMCPPermissionsCmd())
 	return mcp
@@ -48,9 +48,9 @@ func newMCPStartCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
 			lines := []string{
-				"cairn mcp server (stdio). Phase 0 fake.",
+				"`cairn mcp start` is not implemented yet.",
 				"",
-				"Would expose 5 tools:",
+				"Designed tools:",
 				"  search_mind(query, limit?, filters?)",
 				"  get_card(card_id, include_full_text?)",
 				"  get_related(card_id, limit?)",
@@ -61,7 +61,7 @@ func newMCPStartCmd() *cobra.Command {
 				"  claude-code     not installed",
 				"  claude-desktop  not installed",
 				"",
-				"Phase 0 exits immediately. Real server runs in Phase 3.",
+				"The real server waits on Phase 3.",
 			}
 			for _, line := range lines {
 				if _, err := fmt.Fprintln(out, line); err != nil {
@@ -86,7 +86,7 @@ func newMCPInstallCmd() *cobra.Command {
 			default:
 				preview, ok := mcpInstallPreviews()[client]
 				if !ok {
-					return fmt.Errorf("unknown client %q. Phase 0 supports: claude-code, claude-desktop, manual", client)
+					return fmt.Errorf("unknown client %q. Preview supports: claude-code, claude-desktop, manual", client)
 				}
 				return writeInstallPreview(cmd.OutOrStdout(), preview)
 			}
@@ -161,7 +161,7 @@ func mcpInstallPreviews() map[string]mcpInstallPreview {
 			Existing: []string{"brave-search", "filesystem"},
 			Command:  []string{"cairn", "mcp", "start"},
 			Phase: []string{
-				"Phase 0 would write this merge. Real install runs in Phase 3.",
+				"Preview only. Real config writes wait on Phase 3.",
 				"Run `cairn mcp permissions` to review tool-level scopes.",
 			},
 		},
@@ -171,7 +171,7 @@ func mcpInstallPreviews() map[string]mcpInstallPreview {
 			Existing: []string{"brave-search", "filesystem", "exa", "perplexity-ask"},
 			Command:  []string{"cairn", "mcp", "start"},
 			Phase: []string{
-				"Phase 0 would write this merge. Real install runs in Phase 3.",
+				"Preview only. Real config writes wait on Phase 3.",
 				"Run `cairn mcp permissions` to review tool-level scopes.",
 			},
 		},
@@ -214,8 +214,7 @@ func writeManualInstall(out io.Writer) error {
 		"}",
 		"",
 		"Merge this into your client's MCP config under its server key.",
-		"Phase 0 emits this snippet only.",
-		"`cairn mcp install claude-code` and `claude-desktop` write in Phase 3.",
+		"Preview only. Real config writes wait on Phase 3.",
 	}
 	for _, line := range lines {
 		if _, err := fmt.Fprintln(out, line); err != nil {
@@ -253,7 +252,7 @@ func writeAuditPlain(out io.Writer, entries []mcpAuditEntry) error {
 			return err
 		}
 	}
-	_, err := fmt.Fprintln(out, "Phase 0: sample audit rows. Real log reads from the mcp_audit table in Phase 3.")
+	_, err := fmt.Fprintln(out, "Preview rows only. Real audit logs wait on Phase 3.")
 	return err
 }
 
@@ -304,9 +303,9 @@ func writePermissionsPlain(out io.Writer, permissions []mcpPermissionSet) error 
 	if _, err := fmt.Fprintln(out); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintln(out, "Phase 0 values are the privacy-first defaults."); err != nil {
+	if _, err := fmt.Fprintln(out, "Preview values are the privacy-first defaults."); err != nil {
 		return err
 	}
-	_, err := fmt.Fprintln(out, "Edit ~/.cairn/config.toml in Phase 3 to change them.")
+	_, err := fmt.Fprintln(out, "Config file writes are not implemented yet.")
 	return err
 }

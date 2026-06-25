@@ -22,11 +22,10 @@ func NewRoot() *cobra.Command {
 }
 
 func NewRootWithSource(src source.Source) *cobra.Command {
-	fixture := source.NewFixtureSource()
 	root := &cobra.Command{
 		Use:           "cairn",
 		Short:         "Terminal-native bridge between MyMind and the tools you already use",
-		Long:          "Cairn makes your MyMind library queryable from the terminal and a first-class context source for AI tools.\n\nPhase 0 is a design prototype with hand-authored output. Real storage and search arrive in Phase 1.",
+		Long:          "Cairn makes your MyMind library queryable from the terminal and mirrors it into Phoenix markdown.\n\nReal today: import, status, search, get, open, export. Designed but not implemented yet: find, pack, ask, mcp.",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -35,10 +34,10 @@ func NewRootWithSource(src source.Source) *cobra.Command {
 		newImportCmd(),
 		newStatusCmd(src),
 		newSearchCmd(src),
-		newFindCmd(fixture),
+		newFindCmd(src),
 		newGetCmd(src),
 		newOpenCmd(src),
-		newPackCmd(fixture),
+		newPackCmd(src),
 		newAskCmd(),
 		newExportCmd(src),
 		newConfigCmd(),

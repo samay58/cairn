@@ -59,7 +59,7 @@ func TestPackEscapesXMLQuery(t *testing.T) {
 	}
 }
 
-func TestPackUsesFixturesAfterRealImport(t *testing.T) {
+func TestPackImportedLibraryIsNotImplemented(t *testing.T) {
 	t.Setenv("CAIRN_HOME", t.TempDir())
 	importSampleHelper(t)
 
@@ -73,5 +73,7 @@ func TestPackUsesFixturesAfterRealImport(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	golden.Assert(t, "pack_claude.txt", out.String())
+	if !strings.Contains(out.String(), "`cairn pack` is not implemented for imported libraries yet.") {
+		t.Fatalf("expected not implemented message, got:\n%s", out.String())
+	}
 }

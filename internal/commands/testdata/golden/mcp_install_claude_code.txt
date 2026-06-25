@@ -9,5 +9,5 @@ Proposed merge (new keys only):
     "args": ["mcp", "start"]
   }
 
-Phase 0 would write this merge. Real install runs in Phase 3.
+Preview only. Real config writes wait on Phase 3.
 Run `cairn mcp permissions` to review tool-level scopes.

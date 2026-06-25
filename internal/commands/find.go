@@ -11,11 +11,15 @@ import (
 func newFindCmd(src source.Source) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "find",
-		Short: "Full-screen fuzzy TUI (Phase 0: static mock)",
+		Short: "Full-screen fuzzy TUI (not implemented yet)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mode, err := selectedOutputMode(cmd)
 			if err != nil {
 				return err
+			}
+			if hasSuccessfulImport(src) {
+				return writeNotImplemented(cmd.OutOrStdout(), "`cairn find` is not implemented for imported libraries yet.",
+					"Use `cairn search <query>` and `cairn get @N` for now.")
 			}
 
 			limit, err := limitValue(cmd)
@@ -56,7 +60,7 @@ func newFindCmd(src source.Source) *cobra.Command {
 				if _, err = fmt.Fprintln(out); err != nil {
 					return err
 				}
-				_, err = fmt.Fprintln(out, "Phase 0: this is a static mock. Real TUI lands in Phase 2.")
+				_, err = fmt.Fprintln(out, "Preview only. Real TUI is not implemented yet.")
 			}
 			return err
 		},

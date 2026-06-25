@@ -24,6 +24,9 @@ func ScanMedia(dir string) ([]MediaItem, error) {
 		if info.IsDir() {
 			return nil
 		}
+		if len(info.Name()) > 0 && info.Name()[0] == '.' {
+			return nil
+		}
 		f, err := os.Open(path)
 		if err != nil {
 			return err

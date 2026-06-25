@@ -36,7 +36,7 @@ type configView struct {
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Edit config (Phase 0: shows defaults only)",
+		Short: "Show default config values",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mode, err := selectedOutputMode(cmd)
 			if err != nil {
@@ -64,8 +64,8 @@ func buildConfigView() configView {
 	config := configView{
 		Path: "~/.cairn/config.toml",
 		Phase: []string{
-			"Phase 0 values are hand-authored defaults.",
-			"Real config reads and writes arrive in Phase 1.",
+			"Preview values only.",
+			"Config file reads and writes are not implemented yet.",
 		},
 	}
 	config.Storage.CacheFullContent = false
@@ -83,7 +83,7 @@ func buildConfigView() configView {
 
 func writeConfigPlain(out io.Writer, config configView) error {
 	lines := []string{
-		config.Path + " (Phase 0 defaults)",
+		config.Path + " (defaults preview)",
 		"",
 		"[storage]",
 		"cache_full_content = false",

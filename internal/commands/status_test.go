@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -108,4 +109,44 @@ func TestStatusImportedLongHomeFitsWidth(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertFitsDefaultWidth(t, out.String())
+}
+
+func TestStatusJSONIncludesImportAndCommandAvailability(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("CAIRN_HOME", tmp)
+	importSampleHelper(t)
+
+	root, err := buildRootForCurrentDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"status", "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var got statusView
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Import.RowsRead != 4 || got.Import.ValidCards != 4 {
+		t.Fatalf("unexpected import summary: %+v", got.Import)
+	}
+	if !containsString(got.Commands.Real, "export") {
+		t.Fatalf("real commands missing export: %+v", got.Commands.Real)
+	}
+	if !containsString(got.Commands.NotImplemented, "pack") {
+		t.Fatalf("not implemented commands missing pack: %+v", got.Commands.NotImplemented)
+	}
+}
+
+func containsString(list []string, want string) bool {
+	for _, item := range list {
+		if item == want {
+			return true
+		}
+	}
+	return false
 }

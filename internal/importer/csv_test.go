@@ -90,6 +90,16 @@ func TestParseCardsCSVRealMyMindTypes(t *testing.T) {
 		"w,WebPage,Web page,https://w.com,,,tag,2026-04-01T00:00:00Z\n" +
 		"d,Document,PDF,,,,doc,2026-04-01T00:00:00Z\n" +
 		"e,Embed,Tweet,https://x.com/t,,,tag,2026-04-01T00:00:00Z\n" +
+		"x,XPost,Tweet,https://x.com/t2,,,tag,2026-04-01T00:00:00Z\n" +
+		"g,Repository,Repo,https://github.com/example/repo,,,tag,2026-04-01T00:00:00Z\n" +
+		"wiki,WikipediaArticle,Wiki,https://en.wikipedia.org/wiki/X,,,tag,2026-04-01T00:00:00Z\n" +
+		"m,Movie,Movie,https://letterboxd.com/film/x,,,tag,2026-04-01T00:00:00Z\n" +
+		"tv,TVSeries,Series,https://example.com/tv,,,tag,2026-04-01T00:00:00Z\n" +
+		"vg,VideoGame,Game,https://example.com/game,,,tag,2026-04-01T00:00:00Z\n" +
+		"r,RedditPost,Post,https://reddit.com/r/x,,,tag,2026-04-01T00:00:00Z\n" +
+		"p,Product,Product,https://example.com/product,,,tag,2026-04-01T00:00:00Z\n" +
+		"b,Business,Business,https://example.com/biz,,,tag,2026-04-01T00:00:00Z\n" +
+		"ph,Placeholder,Placeholder,https://example.com/placeholder,,,tag,2026-04-01T00:00:00Z\n" +
 		"y,YouTubeVideo,Vid,https://yt.com,,,tag,2026-04-01T00:00:00Z\n" +
 		"n,Note,Thought,,Body text,,tag,2026-04-01T00:00:00Z\n"
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
@@ -99,18 +109,40 @@ func TestParseCardsCSVRealMyMindTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 6 {
-		t.Fatalf("got %d cards, want 6", len(got))
+	if len(got) != 16 {
+		t.Fatalf("got %d cards, want 16", len(got))
 	}
 	kinds := map[cards.Kind]int{}
 	for _, c := range got {
 		kinds[c.Kind]++
 	}
-	if kinds[cards.KindArticle] != 5 {
-		t.Errorf("expected 5 article-aliased cards, got %d (distribution %v)", kinds[cards.KindArticle], kinds)
+	if kinds[cards.KindArticle] != 15 {
+		t.Errorf("expected 15 article-aliased cards, got %d (distribution %v)", kinds[cards.KindArticle], kinds)
 	}
 	if kinds[cards.KindNote] != 1 {
 		t.Errorf("expected 1 note card, got %d", kinds[cards.KindNote])
+	}
+}
+
+func TestParseCardsCSVUnknownKindFallsBackToArticleWithWarning(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unknown-kind.csv")
+	body := "\xef\xbb\xbfid,type,title,url,content,note,tags,created\n" +
+		"u,ArticleLikeThing,Useful link,https://example.com,Body,,tag,2026-04-01T00:00:00Z\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, warnings, err := ParseCardsCSV(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d cards, want 1", len(got))
+	}
+	if got[0].Kind != cards.KindArticle {
+		t.Fatalf("unknown kind mapped to %q, want article", got[0].Kind)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], `unknown kind "ArticleLikeThing" treated as article`) {
+		t.Fatalf("expected fallback warning, got %v", warnings)
 	}
 }
 

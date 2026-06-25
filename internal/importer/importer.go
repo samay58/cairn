@@ -13,13 +13,16 @@ import (
 )
 
 type Result struct {
-	Inserted   int
-	Updated    int
-	Tombstoned int
-	MediaCount int
-	ChunkCount int
+	RowsRead    int
+	ValidCards  int
+	Inserted    int
+	Updated     int
+	Unchanged   int
+	Tombstoned  int
+	MediaCount  int
+	ChunkCount  int
 	SkippedRows int
-	Warnings   []string
+	Warnings    []string
 }
 
 type cardSnapshot struct {
@@ -49,19 +52,23 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		WHERE finished_at IS NULL AND status = 'running'`, start.Format(time.RFC3339)); err != nil {
 		return r, err
 	}
-	syncRes, err := db.Exec(`INSERT INTO sync_log(started_at, status) VALUES (?, 'running')`, start.Format(time.RFC3339))
+	syncRes, err := db.Exec(`INSERT INTO sync_log(started_at, status, source_path) VALUES (?, 'running', ?)`,
+		start.Format(time.RFC3339), exportDir)
 	if err != nil {
 		return r, err
 	}
 	syncID, _ := syncRes.LastInsertId()
 
-	parsed, parseWarns, err := ParseCardsCSV(filepath.Join(exportDir, "cards.csv"))
+	parsedResult, err := ParseCardsCSVDetailed(filepath.Join(exportDir, "cards.csv"))
 	if err != nil {
 		markSyncFailed(db, syncID, err)
 		return r, err
 	}
-	r.Warnings = append(r.Warnings, parseWarns...)
-	r.SkippedRows = len(parseWarns)
+	parsed := parsedResult.Cards
+	r.RowsRead = parsedResult.RowsRead
+	r.ValidCards = len(parsed)
+	r.SkippedRows = parsedResult.SkippedRows
+	r.Warnings = append(r.Warnings, parsedResult.Warnings...)
 
 	snapshots, active, err := loadSnapshots(db)
 	if err != nil {
@@ -94,6 +101,8 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		if snap, ok := snapshots[c.MyMindID]; ok {
 			if snapshotChanged(snap, c) {
 				r.Updated++
+			} else {
+				r.Unchanged++
 			}
 		} else {
 			r.Inserted++
@@ -181,8 +190,34 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	}
 
 	finish := time.Now().UTC()
-	_, _ = db.Exec(`UPDATE sync_log SET finished_at = ?, delta_count = ?, status = 'ok' WHERE id = ?`,
-		finish.Format(time.RFC3339), r.Inserted+r.Updated+r.Tombstoned, syncID)
+	_, _ = db.Exec(`UPDATE sync_log SET
+		finished_at = ?,
+		delta_count = ?,
+		status = 'ok',
+		rows_read = ?,
+		valid_cards = ?,
+		inserted_count = ?,
+		updated_count = ?,
+		unchanged_count = ?,
+		tombstoned_count = ?,
+		skipped_rows = ?,
+		warning_count = ?,
+		media_count = ?,
+		chunk_count = ?
+		WHERE id = ?`,
+		finish.Format(time.RFC3339),
+		r.Inserted+r.Updated+r.Tombstoned,
+		r.RowsRead,
+		r.ValidCards,
+		r.Inserted,
+		r.Updated,
+		r.Unchanged,
+		r.Tombstoned,
+		r.SkippedRows,
+		len(r.Warnings),
+		r.MediaCount,
+		r.ChunkCount,
+		syncID)
 
 	return r, nil
 }

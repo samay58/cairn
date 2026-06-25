@@ -74,3 +74,34 @@ func TestImportSampleExportLongHomeFitsWidth(t *testing.T) {
 	}
 	assertFitsDefaultWidth(t, out.String())
 }
+
+func TestImportNoopReportsRowsAndUnchangedCards(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("CAIRN_HOME", tmp)
+
+	exportDir := filepath.Join("..", "..", "testdata", "mymind_sample_export")
+	root := NewRootWithSource(source.NewFixtureSource())
+	root.SetArgs([]string{"import", exportDir})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	root = NewRootWithSource(source.NewFixtureSource())
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"import", exportDir})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	got := out.String()
+	for _, want := range []string{
+		"Rows: 4 read, 4 valid, 0 skipped.",
+		"Cards: 0 inserted, 0 updated, 4 unchanged, 0 tombstoned.",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected %q in output:\n%s", want, got)
+		}
+	}
+}

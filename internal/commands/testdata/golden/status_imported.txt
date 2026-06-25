@@ -1,9 +1,13 @@
-cairn 0.1.0-phase1
+cairn 0.1.0-phase2a
 
 library   4 cards · last import <TS> · 0 pending
 storage   <SIZE> · media cache off
           <TMP>/cairn.db
+import    4 read · 4 valid · 0 skipped · 0 warnings
+changes   4 inserted · 0 updated · 0 unchanged · 0 tombstoned
 mcp       not installed
 clients   none
+commands  real: import, status, search, get, open, export
+          not implemented: find, pack, ask, mcp
 
-Phase 1. Import-backed search. Other commands ship later.
+Phase 2a. Import, search, get, open, and export are real.

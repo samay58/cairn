@@ -1,4 +1,4 @@
-~/.cairn/config.toml (Phase 0 defaults)
+~/.cairn/config.toml (defaults preview)
 
 [storage]
 cache_full_content = false
@@ -18,5 +18,5 @@ get_related = true
 get_card = "prompt"
 save_to_mind = false
 
-Phase 0 values are hand-authored defaults.
-Real config reads and writes arrive in Phase 1.
+Preview values only.
+Config file reads and writes are not implemented yet.

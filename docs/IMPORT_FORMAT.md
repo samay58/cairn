@@ -1,6 +1,7 @@
 # MyMind export format (observed)
 
-Based on a real export to `~/phoenix/Clippings/mymind/` on 2026-04-21.
+Based on real exports to `~/phoenix/Clippings/mymind/` on 2026-04-21
+and 2026-06-25.
 
 ## Files
 
@@ -14,7 +15,7 @@ UTF-8 with a BOM on the header line. Columns observed:
 | column    | notes                                                                                                                                          |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`      | MyMind card identifier. Used as both `id` and `mymind_id` in cairn's schema.                                                                   |
-| `type`    | Capitalized: `Article`, `Document`, `Embed`, `Note`, `WebPage`, `YouTubeVideo`, `Image` (not observed in this export but expected), `Quote` (not observed). |
+| `type`    | Capitalized. Observed values include `Article`, `Document`, `Embed`, `Note`, `WebPage`, `YouTubeVideo`, `XPost`, `Movie`, `Repository`, `WikipediaArticle`, `TVSeries`, `VideoGame`, `RedditPost`, `Placeholder`, `Business`, and `Product`. |
 | `title`   | Human title. May be empty (e.g. for raw note cards).                                                                                           |
 | `url`     | Source URL. Empty for notes and many documents.                                                                                                |
 | `content` | Body text. May be multi-line with embedded newlines inside CSV quotes.                                                                         |
@@ -26,7 +27,10 @@ UTF-8 with a BOM on the header line. Columns observed:
 
 Phase 1 preserves the four-letter kind display (`a/i/q/n`) and maps MyMind types into those buckets:
 
-- `Article`, `WebPage`, `Document`, `Embed`, `YouTubeVideo` → `article` (`a`)
+- `Article`, `WebPage`, `Document`, `Embed`, `YouTubeVideo`,
+  `XPost`, `Movie`, `Repository`, `WikipediaArticle`, `TVSeries`,
+  `VideoGame`, `RedditPost`, `Placeholder`, `Business`, and `Product`
+  → `article` (`a`)
 - `Image`, `Photo` → `image` (`i`)
 - `Quote` → `quote` (`q`)
 - `Note` → `note` (`n`)
@@ -41,12 +45,14 @@ Phase 2 may introduce finer-grained kinds (e.g. `document`, `video`) once the UI
 - Unknown columns are silently ignored.
 - Rows missing `id` or `type` produce a warning and are skipped; the rest of the import continues.
 - Empty `title` is allowed (note cards in MyMind commonly have no title).
-- Unknown type values produce a warning and skip the row.
+- Unknown type values with enough data to become a card fall back to
+  `article` with a warning. Malformed rows that cannot become cards are
+  still skipped with a warning.
 - Duplicate tags within a card are deduplicated before insert.
 
 ## Media
 
-The scanner walks the export root if no `media/` subfolder exists. It skips `cards.csv`, computes SHA-256 + MIME for every remaining file, and stores the result in the `media` table with kind derived from MIME (`image/*` → image, `video/*` → video, `application/pdf` → document, otherwise `other`).
+The scanner walks the export root if no `media/` subfolder exists. It skips `cards.csv` and dotfiles such as `.DS_Store`, computes SHA-256 + MIME for every remaining file, and stores the result in the `media` table with kind derived from MIME (`image/*` → image, `video/*` → video, `application/pdf` → document, otherwise `other`).
 
 ### Per-card linkage (Phase 2a)
 

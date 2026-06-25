@@ -18,7 +18,7 @@ func addOutputFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("json", false, "emit JSON output")
 	cmd.Flags().Bool("jsonl", false, "emit JSONL output")
 	cmd.Flags().Bool("plain", false, "emit plain text")
-	cmd.Flags().Bool("no-color", false, "disable color output (no-op in Phase 0)")
+	cmd.Flags().Bool("no-color", false, "disable color output")
 }
 
 func addListFlags(cmd *cobra.Command) {

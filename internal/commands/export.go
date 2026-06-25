@@ -1,10 +1,13 @@
 package commands
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/samay58/cairn/internal/phoenix"
 	"github.com/samay58/cairn/internal/render"
@@ -44,12 +47,22 @@ func newExportCmd(src source.Source) *cobra.Command {
 					"No import recorded yet. Run `cairn import <path>` first.")
 				return err
 			}
+			if importPath := lastImportSourcePath(cairnDBPath()); importPath != "" && samePathCaseInsensitive(to, importPath) {
+				return fmt.Errorf("export target matches the last import path: %s", to)
+			}
 
 			bundles := collectBundles(src)
 			w := &phoenix.Writer{Root: to, DryRun: dry}
+			started := time.Now().UTC()
 			rep, werr := w.Write(bundles)
 			if werr != nil {
+				if !dry {
+					recordExportSummary(cairnDBPath(), started, to, rep, "error", werr.Error())
+				}
 				return fmt.Errorf("export to %s: %w", to, werr)
+			}
+			if !dry {
+				recordExportSummary(cairnDBPath(), started, to, rep, "ok", "")
 			}
 			view := exportView{
 				CardsWritten:   rep.CardsWritten,
@@ -74,7 +87,7 @@ func newExportCmd(src source.Source) *cobra.Command {
 	}
 	addOutputFlags(cmd)
 	cmd.Flags().Bool("dry-run", false, "Preview without writing")
-	cmd.Flags().String("to", "", "Vault root (defaults to ~/phoenix/Clippings/MyMind/)")
+	cmd.Flags().String("to", "", "Vault root (defaults to ~/phoenix/04-knowledge-base/research-archive/mymind-cards/)")
 	return cmd
 }
 
@@ -89,7 +102,7 @@ func collectBundles(src source.Source) []phoenix.CardBundle {
 
 func defaultExportRoot() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, "phoenix", "Clippings", "MyMind")
+	return filepath.Join(home, "phoenix", "04-knowledge-base", "research-archive", "mymind-cards")
 }
 
 func writeExportPlain(out io.Writer, v exportView) error {
@@ -110,6 +123,12 @@ func writeExportPlain(out io.Writer, v exportView) error {
 			return err
 		}
 	}
+	if !v.DryRun {
+		if _, err := fmt.Fprintf(out, "  mirror: %d cards, %d media files\n",
+			v.CardsWritten+v.CardsUnchanged, v.MediaWritten+v.MediaSkipped); err != nil {
+			return err
+		}
+	}
 	for _, wn := range v.Warnings {
 		if _, err := fmt.Fprintf(out, "  warning: %s\n", wn); err != nil {
 			return err
@@ -120,5 +139,57 @@ func writeExportPlain(out io.Writer, v exportView) error {
 			return err
 		}
 	}
+	if !v.DryRun && isDefaultPhoenixExportPath(v.Path) {
+		if _, err := fmt.Fprintln(out, "Next: cd ~/phoenix && qmd update"); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func lastImportSourcePath(dbPath string) string {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+	var path string
+	_ = db.QueryRow(`SELECT coalesce(source_path, '')
+		FROM sync_log WHERE status='ok' ORDER BY finished_at DESC LIMIT 1`).Scan(&path)
+	return path
+}
+
+func samePathCaseInsensitive(left, right string) bool {
+	leftAbs, leftErr := filepath.Abs(filepath.Clean(left))
+	rightAbs, rightErr := filepath.Abs(filepath.Clean(right))
+	if leftErr != nil || rightErr != nil {
+		return strings.EqualFold(filepath.Clean(left), filepath.Clean(right))
+	}
+	return strings.EqualFold(leftAbs, rightAbs)
+}
+
+func recordExportSummary(dbPath string, started time.Time, target string, rep phoenix.WriteReport, status, detail string) {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	_, _ = db.Exec(`INSERT INTO export_log(
+		started_at, finished_at, target_path, cards_written, cards_unchanged,
+		media_written, media_skipped, warning_count, status, detail
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		started.Format(time.RFC3339),
+		time.Now().UTC().Format(time.RFC3339),
+		target,
+		rep.CardsWritten,
+		rep.CardsUnchanged,
+		rep.MediaWritten,
+		rep.MediaSkipped,
+		len(rep.Warnings),
+		status,
+		detail)
+}
+
+func isDefaultPhoenixExportPath(path string) bool {
+	return samePathCaseInsensitive(path, defaultExportRoot())
 }

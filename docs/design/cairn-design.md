@@ -29,7 +29,7 @@ Cairn ships on the import path today and is designed so the future API landing i
 | Name | `cairn` | Short, unclaimed, phonetically clean. |
 | License | MIT, public GitHub | Portfolio-visible; simplifies the Homebrew tap. |
 | Repo location | `~/cairn/` | Matches existing pattern for dev projects. |
-| Phoenix vault write path | `~/phoenix/Clippings/MyMind/` plus `~/phoenix/Clippings/MyMind/_media/` | Uses the existing `Clippings/` convention; keeps external saved content out of active and reference layers. |
+| Phoenix vault write path | `~/phoenix/04-knowledge-base/research-archive/mymind-cards/` plus `_media/` beneath it | Keeps raw MyMind exports in `Clippings/mymind/` and the durable markdown mirror in Knowledge Base. Avoids the `MyMind` vs `mymind` case collision on macOS. |
 | Embedding default | Local MiniLM-class, ~60MB one-time download, lazy compute | Privacy-first. Configurable upgrade to Voyage or OpenAI later. |
 | LLM for `ask` and `digest` | Anthropic default; prompt on first invocation if `ANTHROPIC_API_KEY` absent | Matches primary workflow. Configurable override via env or config. |
 | MCP client autoconfig scope (v1) | Claude Code and Claude Desktop | Primary surfaces. Manual snippet emission for Cursor, Continue, Zed. |
@@ -173,7 +173,7 @@ Defaults err toward privacy:
 
 ## Phoenix bridge
 
-`cairn export` writes each card as a markdown file to `~/phoenix/Clippings/MyMind/{YYYY-MM-DD}-{slug}.md`. Frontmatter carries `mymind_id`, `url`, `tags[]`, `captured_at`, `kind`. Body holds article extraction or note text or OCR. Media lands at `~/phoenix/Clippings/MyMind/_media/{sha}.{ext}` with relative links, so Obsidian wiki-link resolution works without additional config.
+`cairn export` writes each card as a markdown file to `~/phoenix/04-knowledge-base/research-archive/mymind-cards/{YYYY-MM-DD}-{slug}.md`. Frontmatter carries `mymind_id`, `url`, `tags[]`, `captured_at`, `kind`. Body holds article extraction or note text or OCR. Media lands under `_media/{sha}.{ext}` with relative links, so Obsidian wiki-link resolution works without additional config.
 
 Export is on-demand only in v1. No watcher, no daemon. A Phase 5 concern when the API lands.
 
