@@ -18,7 +18,7 @@ Cairn is not a MyMind clone, not a second home for cards, not a capture tool, no
 
 ## Binding constraints
 
-MyMind has no public API today. They have stated a sanctioned API plus CLI is in development, no shipping timeline. The only sanctioned egress is the manual "Export my mind" button producing `cards.csv` and media files.
+When this was written MyMind had no public API, and the only sanctioned egress was the manual "Export my mind" button producing `cards.csv` and media files. MyMind opened a public-beta API and MCP server in June 2026, with read-only and full-access keys. The `APISource` plan is in `docs/plans/cairn-phase-2b-sync.md`; until it ships, the export button remains cairn's input.
 
 Cairn ships on the import path today and is designed so the future API landing is a config flag, not a rewrite. Session-cookie scraping against `access.mymind.com` is prohibited, including as an optional mode. The ethical posture, brittleness, and portfolio optics all argue against it.
 
@@ -29,7 +29,7 @@ Cairn ships on the import path today and is designed so the future API landing i
 | Name | `cairn` | Short, unclaimed, phonetically clean. |
 | License | MIT, public GitHub | Portfolio-visible; simplifies the Homebrew tap. |
 | Repo location | `~/cairn/` | Matches existing pattern for dev projects. |
-| Phoenix vault write path | `~/phoenix/04-knowledge-base/research-archive/mymind-cards/` plus `_media/` beneath it | Keeps raw MyMind exports in `Clippings/mymind/` and the durable markdown mirror in Knowledge Base. Avoids the `MyMind` vs `mymind` case collision on macOS. |
+| Phoenix vault write path | `~/phoenix/04-knowledge-base/mymind-cards/` plus `_media/` beneath it | Keeps raw MyMind exports in `Clippings/mymind/` and the durable markdown mirror in Knowledge Base. Avoids the `MyMind` vs `mymind` case collision on macOS. |
 | Embedding default | Local MiniLM-class, ~60MB one-time download, lazy compute | Privacy-first. Configurable upgrade to Voyage or OpenAI later. |
 | LLM for `ask` and `digest` | Anthropic default; prompt on first invocation if `ANTHROPIC_API_KEY` absent | Matches primary workflow. Configurable override via env or config. |
 | MCP client autoconfig scope (v1) | Claude Code and Claude Desktop | Primary surfaces. Manual snippet emission for Cursor, Continue, Zed. |
@@ -173,7 +173,7 @@ Defaults err toward privacy:
 
 ## Phoenix bridge
 
-`cairn export` writes each card as a markdown file to `~/phoenix/04-knowledge-base/research-archive/mymind-cards/{YYYY-MM-DD}-{slug}.md`. Frontmatter carries `mymind_id`, `url`, `tags[]`, `captured_at`, `kind`. Body holds article extraction or note text or OCR. Media lands under `_media/{sha}.{ext}` with relative links, so Obsidian wiki-link resolution works without additional config.
+`cairn export` writes each card as a markdown file to `~/phoenix/04-knowledge-base/mymind-cards/{YYYY-MM-DD}-{slug}.md`. Frontmatter carries `mymind_id`, `url`, `tags[]`, `captured_at`, `kind`. Body holds article extraction or note text or OCR. Media lands under `_media/{sha}.{ext}` with relative links, so Obsidian wiki-link resolution works without additional config.
 
 Export is on-demand only in v1. No watcher, no daemon. A Phase 5 concern when the API lands.
 

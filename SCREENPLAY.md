@@ -131,14 +131,14 @@ Would open: https://access.mymind.com/cards/mm_2
 ## Export
 
 `cairn export` mirrors the imported library into Phoenix markdown. The default
-target is `~/phoenix/04-knowledge-base/research-archive/mymind-cards`.
+target is `~/phoenix/04-knowledge-base/mymind-cards`.
 
 ```console
 $ cairn export
 ```
 
 ```
-Wrote 4 cards to ~/phoenix/04-knowledge-base/research-archive/mymind-cards
+Wrote 4 cards to ~/phoenix/04-knowledge-base/mymind-cards
   media: 1 written, 0 skipped
   mirror: 4 cards, 1 media files
 Next: cd ~/phoenix && qmd update

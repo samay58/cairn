@@ -15,4 +15,6 @@
 
 # Local agent notes, not for the public repo
 /CLAUDE.md
+/AGENTS.md
+/.specstory/
 /.conductor/
