@@ -59,6 +59,14 @@ func runImport(dbPath, exportDir string, state syncState) (importer.Result, erro
 	if _, err := os.Stat(exportDir); err != nil {
 		return importer.Result{}, formatImportError("read export directory", err, state)
 	}
+	return withDB(dbPath, state, func(db *sql.DB) (importer.Result, error) {
+		return importer.Import(db, exportDir)
+	})
+}
+
+// withDB opens and migrates the database, runs ingest, and wraps any failure
+// with the recovery guidance import errors carry.
+func withDB(dbPath string, state syncState, ingest func(*sql.DB) (importer.Result, error)) (importer.Result, error) {
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return importer.Result{}, formatImportError("create cairn home", err, state)
 	}
@@ -70,9 +78,9 @@ func runImport(dbPath, exportDir string, state syncState) (importer.Result, erro
 	if err := sqlite.Migrate(db); err != nil {
 		return importer.Result{}, formatImportError("migrate database", err, state)
 	}
-	result, err := importer.Import(db, exportDir)
+	result, err := ingest(db)
 	if err != nil {
-		return result, formatImportError("ingest export", err, readSyncState(dbPath))
+		return result, formatImportError("ingest library", err, readSyncState(dbPath))
 	}
 	return result, nil
 }

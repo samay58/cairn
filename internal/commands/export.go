@@ -18,6 +18,7 @@ import (
 type exportView struct {
 	CardsWritten   int      `json:"cards_written"`
 	CardsUnchanged int      `json:"cards_unchanged"`
+	CardsRenamed   int      `json:"cards_renamed"`
 	MediaWritten   int      `json:"media_written"`
 	MediaSkipped   int      `json:"media_skipped"`
 	Warnings       []string `json:"warnings"`
@@ -91,6 +92,7 @@ func mirrorToVault(src source.Source, to string, dry bool) (exportView, error) {
 	return exportView{
 		CardsWritten:   rep.CardsWritten,
 		CardsUnchanged: rep.CardsUnchanged,
+		CardsRenamed:   rep.CardsRenamed,
 		MediaWritten:   rep.MediaWritten,
 		MediaSkipped:   rep.MediaSkipped,
 		Warnings:       rep.Warnings,
@@ -123,6 +125,11 @@ func writeExportPlain(out io.Writer, v exportView) error {
 	}
 	if v.CardsUnchanged > 0 {
 		if _, err := fmt.Fprintf(out, "  %d cards unchanged\n", v.CardsUnchanged); err != nil {
+			return err
+		}
+	}
+	if v.CardsRenamed > 0 {
+		if _, err := fmt.Fprintf(out, "  %d untitled cards renamed to their titles\n", v.CardsRenamed); err != nil {
 			return err
 		}
 	}
