@@ -10,7 +10,7 @@ A terminal-native bridge between MyMind and the tools I actually work in.
 
 MyMind is the best capture tool I have used. One click in the browser and it pulls the article, the image, the quote, the tab, auto-tags it, OCRs it, and tucks it away. My library grows on its own.
 
-Getting things back out is a different story. MyMind's search works fine inside the MyMind app and is invisible to everything else. MyMind opened a public-beta API in June 2026; until cairn reads it, the egress is the "Export my mind" download. So the cards I saved sit in a place that Claude Code cannot see, Obsidian cannot see, and my terminal cannot see. The library compounds. The leverage does not.
+Getting things back out is a different story. MyMind's search works fine inside the MyMind app and is invisible to everything else. MyMind opened a public-beta API in June 2026, and cairn reads it: one request pulls the whole library with MyMind's AI summary of every card. So the cards I saved sit in a place that Claude Code cannot see, Obsidian cannot see, and my terminal cannot see. The library compounds. What I can do with it does not.
 
 Cairn is the egress path.
 
@@ -32,7 +32,7 @@ Not a MyMind clone. Not a second home for cards. Not a capture tool. Not a dashb
 
 ## Status
 
-Import, search, the Phoenix vault mirror, and one-step `sync` are real. Context packs, the fuzzy TUI, MCP, and RAG are designed but each phase has to earn its ship: if I do not reach for the previous phase in real work within a week, the next one does not land. Per-phase honest accounting lives in `PHASE-0-REPORT.md`, `PHASE-1-REPORT.md`, `PHASE-2A-REPORT.md`, and `docs/plans/cairn-phase-2b-sync.md`.
+Import, search, the Phoenix vault mirror, and one-step `sync` (from the API or an export) are real. Context packs, the fuzzy TUI, MCP, and RAG are designed but each phase has to earn its ship: if I do not reach for the previous phase in real work within a week, the next one does not land. Per-phase honest accounting lives in `PHASE-0-REPORT.md`, `PHASE-1-REPORT.md`, `PHASE-2A-REPORT.md`, and `docs/plans/cairn-phase-2b-sync.md`.
 
 The full design is at `docs/design/cairn-design.md`. A first-run walkthrough is at `SCREENPLAY.md`.
 
@@ -50,18 +50,24 @@ go build -o cairn ./cmd/cairn
 
 ## Phoenix workflow
 
-Save the "Export my mind" download into `~/phoenix/Clippings/mymind`, then run:
-
 ```bash
 cairn sync
 ```
 
-`sync` imports the export, mirrors every card into
-`~/phoenix/04-knowledge-base/mymind-cards`, and replaces each attachment in the
-raw folder with a relative link to its vault copy, so the vault holds one copy
-of every binary. Each step is idempotent: a second run reports zero changes.
-`cairn import` and `cairn export` remain available as separate steps. Never
-export into `~/phoenix/Clippings/MyMind`: on macOS that is the raw folder.
+With a MyMind API key, `sync` pulls the library in one request (about one credit
+of the plan's monthly quota), downloads only attachments it does not have yet, and
+needs no export. Create a READ ONLY key at access.mymind.com and store it as
+`CAIRN_MYMIND_KID` and `CAIRN_MYMIND_SECRET`, or on macOS as the Keychain items
+`mymind-api-kid` and `mymind-api-secret`. Without a key, or with
+`--from-export`, `sync` reads the "Export my mind" download saved in
+`~/phoenix/Clippings/mymind`.
+
+Either way it mirrors every card into `~/phoenix/04-knowledge-base/mymind-cards`
+and replaces each raw attachment with a relative link to its vault copy. A card
+keeps its file when its title changes. Each step is idempotent, and `sync`
+refuses to tombstone more than half the library from one snapshot, so a
+truncated export cannot empty the mirror. Never export into
+`~/phoenix/Clippings/MyMind`: on macOS that is the raw folder.
 
 ## License
 

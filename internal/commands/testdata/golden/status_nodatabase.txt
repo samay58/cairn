@@ -1,4 +1,4 @@
-cairn 0.2.0-phase2b
+cairn 0.3.0
 
 library   25 cards (fixtures; no database yet)
 storage   run `cairn import <path>` to create a database

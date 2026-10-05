@@ -18,7 +18,7 @@ Cairn is not a MyMind clone, not a second home for cards, not a capture tool, no
 
 ## Binding constraints
 
-When this was written MyMind had no public API, and the only sanctioned egress was the manual "Export my mind" button producing `cards.csv` and media files. MyMind opened a public-beta API and MCP server in June 2026, with read-only and full-access keys. The `APISource` plan is in `docs/plans/cairn-phase-2b-sync.md`; until it ships, the export button remains cairn's input.
+When this was written MyMind had no public API, and the only sanctioned egress was the manual "Export my mind" button producing `cards.csv` and media files. MyMind opened a public-beta API and MCP server in June 2026, with read-only and full-access keys. Cairn reads it as of phase 2b (`internal/mymindapi`, `cairn sync`); the export button remains the fallback. See `docs/plans/cairn-phase-2b-sync.md`.
 
 Cairn ships on the import path today and is designed so the future API landing is a config flag, not a rewrite. Session-cookie scraping against `access.mymind.com` is prohibited, including as an optional mode. The ethical posture, brittleness, and portfolio optics all argue against it.
 

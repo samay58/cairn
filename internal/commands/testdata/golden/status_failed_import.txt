@@ -1,4 +1,4 @@
-cairn 0.2.0-phase2b
+cairn 0.3.0
 
 library   0 cards · import state failed · 0 pending
 storage   <SIZE> · media cache off

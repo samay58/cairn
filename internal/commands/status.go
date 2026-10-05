@@ -74,7 +74,7 @@ func buildStatusView(src source.Source) statusView {
 	dbPath := cairnDBPath()
 	sync := readSyncState(dbPath)
 	status := statusView{
-		Version:     "cairn 0.2.0-phase2b",
+		Version:     "cairn 0.3.0",
 		Permissions: "Default search and related allow. Full content prompts.",
 		Phase:       "Phase 2a. Import, search, get, open, and export are real.",
 	}
