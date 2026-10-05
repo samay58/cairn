@@ -1,6 +1,6 @@
 // Package phoenix writes Cairn cards and their media into a Phoenix vault
-// (~/phoenix/Clippings/MyMind/) as markdown files with content-addressed
-// attachments.
+// (~/phoenix/04-knowledge-base/mymind-cards/) as markdown files with
+// content-addressed attachments.
 package phoenix
 
 import "github.com/samay58/cairn/internal/cards"
@@ -18,6 +18,7 @@ type CardBundle struct {
 type WriteReport struct {
 	CardsWritten   int
 	CardsUnchanged int
+	CardsRenamed   int
 	MediaWritten   int
 	MediaSkipped   int
 	Warnings       []string

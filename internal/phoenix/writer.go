@@ -16,10 +16,24 @@ func (w *Writer) Write(bundles []CardBundle) (WriteReport, error) {
 			return r, err
 		}
 	}
+	owner := w.indexByMyMindID()
+	byID := make(map[string]string, len(owner))
+	for name, id := range owner {
+		byID[id] = name
+	}
 	writtenThisBatch := make(map[string]bool)
 	for _, b := range bundles {
-		name := w.resolveFilename(b.Card.MyMindID, DailyFilename(b.Card.CapturedAt, b.Card.Title), writtenThisBatch)
+		base := DailyFilename(b.Card.CapturedAt, b.Card.Title)
+		name, renameFrom := w.resolveFilename(b.Card.MyMindID, base, byID, owner, writtenThisBatch)
 		writtenThisBatch[name] = true
+		if renameFrom != "" && !w.DryRun {
+			if err := os.Rename(filepath.Join(w.Root, renameFrom), filepath.Join(w.Root, name)); err != nil {
+				return r, err
+			}
+			owner[name] = b.Card.MyMindID
+			delete(owner, renameFrom)
+			r.CardsRenamed++
+		}
 
 		refs := make([]MediaRef, 0, len(b.Media))
 		for _, m := range b.Media {
@@ -66,24 +80,57 @@ func (w *Writer) Write(bundles []CardBundle) (WriteReport, error) {
 	return r, nil
 }
 
-// resolveFilename picks a vault-relative filename for a card. If an existing
-// file on disk already belongs to the same mymind_id, reuse its name (lets
-// re-exports overwrite in place). Otherwise bump a collision suffix until the
-// name is free.
-func (w *Writer) resolveFilename(myMindID, base string, batch map[string]bool) string {
-	return UniqueFilename(base, func(n string) bool {
+// resolveFilename picks a vault-relative filename for a card. A card keeps the
+// file it already owns, whatever its title is now, so links and paths stay
+// stable. The one exception is a placeholder "...-untitled" name, which moves
+// to the real title once MyMind has one (renameFrom is then the old name).
+// A new card takes its dated slug, bumping a suffix past names other cards
+// own.
+func (w *Writer) resolveFilename(myMindID, base string, byID, owner map[string]string, batch map[string]bool) (name, renameFrom string) {
+	taken := func(n string) bool {
 		if batch[n] {
 			return true
 		}
-		p := filepath.Join(w.Root, n)
-		if _, err := os.Stat(p); err != nil {
-			return false
+		if id, ok := owner[n]; ok {
+			return id != myMindID
 		}
-		if existingID := readMyMindID(p); existingID == myMindID {
-			return false
+		_, err := os.Stat(filepath.Join(w.Root, n))
+		return err == nil
+	}
+	current, ok := byID[myMindID]
+	if !ok {
+		return UniqueFilename(base, taken), ""
+	}
+	if isPlaceholderName(current) && !isPlaceholderName(base) {
+		if next := UniqueFilename(base, taken); next != current {
+			return next, current
 		}
-		return true
-	})
+	}
+	return current, ""
+}
+
+func isPlaceholderName(name string) bool {
+	stem := strings.TrimSuffix(name, ".md")
+	return len(stem) > 11 && strings.HasPrefix(stem[11:], "untitled")
+}
+
+// indexByMyMindID maps each markdown file in the vault root to the card that
+// owns it, read from frontmatter.
+func (w *Writer) indexByMyMindID() map[string]string {
+	owner := map[string]string{}
+	entries, err := os.ReadDir(w.Root)
+	if err != nil {
+		return owner
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		if id := readMyMindID(filepath.Join(w.Root, e.Name())); id != "" {
+			owner[e.Name()] = id
+		}
+	}
+	return owner
 }
 
 func readMyMindID(path string) string {

@@ -184,3 +184,41 @@ func TestWriterMediaSkippedWhenAlreadyPresent(t *testing.T) {
 		t.Fatalf("got Written=%d Skipped=%d", r.MediaWritten, r.MediaSkipped)
 	}
 }
+
+func TestWriterKeepsOwnedFileAcrossRetitle(t *testing.T) {
+	root := t.TempDir()
+	w := &Writer{Root: root}
+	at := time.Date(2026, 9, 15, 0, 0, 0, 0, time.UTC)
+	card := cards.Card{ID: "m1", MyMindID: "m1", Kind: cards.KindArticle, Title: "First title", CapturedAt: at}
+	if _, err := w.Write([]CardBundle{{Card: card}}); err != nil {
+		t.Fatal(err)
+	}
+	card.Title = "A better title"
+	if _, err := w.Write([]CardBundle{{Card: card}}); err != nil {
+		t.Fatal(err)
+	}
+	if got := readDir(t, root); len(got) != 1 || got[0] != "2026-09-15-first-title.md" {
+		t.Fatalf("files = %v, want the original file only", got)
+	}
+}
+
+func TestWriterRenamesPlaceholderOnceTitled(t *testing.T) {
+	root := t.TempDir()
+	w := &Writer{Root: root}
+	at := time.Date(2026, 9, 15, 0, 0, 0, 0, time.UTC)
+	card := cards.Card{ID: "m1", MyMindID: "m1", Kind: cards.KindArticle, Title: "", CapturedAt: at}
+	if _, err := w.Write([]CardBundle{{Card: card}}); err != nil {
+		t.Fatal(err)
+	}
+	if got := readDir(t, root); len(got) != 1 || got[0] != "2026-09-15-untitled.md" {
+		t.Fatalf("files = %v, want the untitled placeholder", got)
+	}
+	card.Title = "What app should everyone have"
+	rep, err := w.Write([]CardBundle{{Card: card}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := readDir(t, root); rep.CardsRenamed != 1 || len(got) != 1 || got[0] != "2026-09-15-what-app-should-everyone-have.md" {
+		t.Fatalf("renamed %d, files = %v", rep.CardsRenamed, got)
+	}
+}
