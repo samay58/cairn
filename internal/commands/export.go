@@ -51,27 +51,9 @@ func newExportCmd(src source.Source) *cobra.Command {
 				return fmt.Errorf("export target matches the last import path: %s", to)
 			}
 
-			bundles := collectBundles(src)
-			w := &phoenix.Writer{Root: to, DryRun: dry}
-			started := time.Now().UTC()
-			rep, werr := w.Write(bundles)
-			if werr != nil {
-				if !dry {
-					recordExportSummary(cairnDBPath(), started, to, rep, "error", werr.Error())
-				}
-				return fmt.Errorf("export to %s: %w", to, werr)
-			}
-			if !dry {
-				recordExportSummary(cairnDBPath(), started, to, rep, "ok", "")
-			}
-			view := exportView{
-				CardsWritten:   rep.CardsWritten,
-				CardsUnchanged: rep.CardsUnchanged,
-				MediaWritten:   rep.MediaWritten,
-				MediaSkipped:   rep.MediaSkipped,
-				Warnings:       rep.Warnings,
-				Path:           to,
-				DryRun:         dry,
+			view, err := mirrorToVault(src, to, dry)
+			if err != nil {
+				return err
 			}
 			out := cmd.OutOrStdout()
 			switch mode {
@@ -87,8 +69,34 @@ func newExportCmd(src source.Source) *cobra.Command {
 	}
 	addOutputFlags(cmd)
 	cmd.Flags().Bool("dry-run", false, "Preview without writing")
-	cmd.Flags().String("to", "", "Vault root (defaults to ~/phoenix/04-knowledge-base/research-archive/mymind-cards/)")
+	cmd.Flags().String("to", "", "Vault root (defaults to ~/phoenix/04-knowledge-base/mymind-cards/)")
 	return cmd
+}
+
+// mirrorToVault mirrors every card in src to the vault at to and records the run
+// in export_log unless dry is set.
+func mirrorToVault(src source.Source, to string, dry bool) (exportView, error) {
+	w := &phoenix.Writer{Root: to, DryRun: dry}
+	started := time.Now().UTC()
+	rep, err := w.Write(collectBundles(src))
+	if err != nil {
+		if !dry {
+			recordExportSummary(cairnDBPath(), started, to, rep, "error", err.Error())
+		}
+		return exportView{}, fmt.Errorf("export to %s: %w", to, err)
+	}
+	if !dry {
+		recordExportSummary(cairnDBPath(), started, to, rep, "ok", "")
+	}
+	return exportView{
+		CardsWritten:   rep.CardsWritten,
+		CardsUnchanged: rep.CardsUnchanged,
+		MediaWritten:   rep.MediaWritten,
+		MediaSkipped:   rep.MediaSkipped,
+		Warnings:       rep.Warnings,
+		Path:           to,
+		DryRun:         dry,
+	}, nil
 }
 
 func collectBundles(src source.Source) []phoenix.CardBundle {
@@ -102,7 +110,7 @@ func collectBundles(src source.Source) []phoenix.CardBundle {
 
 func defaultExportRoot() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, "phoenix", "04-knowledge-base", "research-archive", "mymind-cards")
+	return filepath.Join(home, "phoenix", "04-knowledge-base", "mymind-cards")
 }
 
 func writeExportPlain(out io.Writer, v exportView) error {

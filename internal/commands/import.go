@@ -24,26 +24,10 @@ func newImportCmd() *cobra.Command {
 			dbPath := cairnDBPath()
 			state := readSyncState(dbPath)
 
-			if _, err := os.Stat(exportDir); err != nil {
-				return formatImportError("read export directory", err, state)
-			}
-
-			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-				return formatImportError("create cairn home", err, state)
-			}
-			db, err := sql.Open("sqlite", dbPath)
-			if err != nil {
-				return formatImportError("open database", err, state)
-			}
-			defer db.Close()
-			if err := sqlite.Migrate(db); err != nil {
-				return formatImportError("migrate database", err, state)
-			}
-
 			fmt.Fprintf(out, "Reading export from %s\n", exportDir)
-			result, err := importer.Import(db, exportDir)
+			result, err := runImport(dbPath, exportDir, state)
 			if err != nil {
-				return formatImportError("ingest export", err, readSyncState(dbPath))
+				return err
 			}
 			fmt.Fprintf(out, "Rows: %d read, %d valid, %d skipped.\n",
 				result.RowsRead, result.ValidCards, result.SkippedRows)
@@ -67,4 +51,28 @@ func newImportCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// runImport opens (and migrates) the database at dbPath and ingests exportDir.
+// Errors come back already wrapped with recovery guidance.
+func runImport(dbPath, exportDir string, state syncState) (importer.Result, error) {
+	if _, err := os.Stat(exportDir); err != nil {
+		return importer.Result{}, formatImportError("read export directory", err, state)
+	}
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+		return importer.Result{}, formatImportError("create cairn home", err, state)
+	}
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return importer.Result{}, formatImportError("open database", err, state)
+	}
+	defer db.Close()
+	if err := sqlite.Migrate(db); err != nil {
+		return importer.Result{}, formatImportError("migrate database", err, state)
+	}
+	result, err := importer.Import(db, exportDir)
+	if err != nil {
+		return result, formatImportError("ingest export", err, readSyncState(dbPath))
+	}
+	return result, nil
 }

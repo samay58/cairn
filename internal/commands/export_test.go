@@ -113,7 +113,7 @@ func TestExportFreshInstallRefusesWithoutImport(t *testing.T) {
 
 func TestDefaultExportRootUsesKnowledgeBaseMirror(t *testing.T) {
 	root := defaultExportRoot()
-	wantSuffix := filepath.Join("phoenix", "04-knowledge-base", "research-archive", "mymind-cards")
+	wantSuffix := filepath.Join("phoenix", "04-knowledge-base", "mymind-cards")
 	if !strings.HasSuffix(root, wantSuffix) {
 		t.Fatalf("default export root = %q, want suffix %q", root, wantSuffix)
 	}
@@ -153,23 +153,25 @@ func TestExportRefusesCaseInsensitiveImportPathCollision(t *testing.T) {
 	}
 }
 
+// copySampleExport copies the sample export, media folder included, into dest.
 func copySampleExport(t *testing.T, dest string) {
 	t.Helper()
 	src := filepath.Join("..", "..", "testdata", "mymind_sample_export")
-	entries, err := os.ReadDir(src)
+	err := filepath.WalkDir(src, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(src, p)
+		if d.IsDir() {
+			return os.MkdirAll(filepath.Join(dest, rel), 0o755)
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(dest, rel), data, 0o644)
+	})
 	if err != nil {
 		t.Fatal(err)
-	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(src, entry.Name()))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(dest, entry.Name()), data, 0o644); err != nil {
-			t.Fatal(err)
-		}
 	}
 }

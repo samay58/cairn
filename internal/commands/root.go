@@ -40,6 +40,7 @@ func NewRootWithSource(src source.Source) *cobra.Command {
 		newPackCmd(src),
 		newAskCmd(),
 		newExportCmd(src),
+		newSyncCmd(),
 		newConfigCmd(),
 		newMCPCmd(),
 	)
