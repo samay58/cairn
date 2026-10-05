@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samay58/cairn/internal/cards"
 	"github.com/samay58/cairn/internal/source"
 	"github.com/samay58/cairn/internal/storage/sqlite"
 	_ "modernc.org/sqlite"
@@ -261,5 +262,29 @@ func TestImportWarnsOnOrphanMedia(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected warning about orphan.pdf, got %v", r.Warnings)
+	}
+}
+
+func TestImportCardsRefusesTruncatedSnapshot(t *testing.T) {
+	db := mustOpen(t)
+	snapshot := func(n int) Snapshot {
+		var s Snapshot
+		for i := 0; i < n; i++ {
+			id := "card" + strings.Repeat("x", i)
+			s.Cards = append(s.Cards, cards.Card{ID: id, MyMindID: id, Kind: cards.KindArticle, Title: id,
+				CapturedAt: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)})
+		}
+		s.RowsRead = n
+		return s
+	}
+	if _, err := ImportCards(db, "test", snapshot(30), t.TempDir(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ImportCards(db, "test", snapshot(10), t.TempDir(), nil); err == nil || !strings.Contains(err.Error(), "refusing to tombstone") {
+		t.Fatalf("truncated snapshot: err = %v, want refusal", err)
+	}
+	var live int
+	if err := db.QueryRow(`SELECT count(*) FROM cards WHERE deleted_at IS NULL`).Scan(&live); err != nil || live != 30 {
+		t.Fatalf("live cards = %d (%v), want all 30 kept", live, err)
 	}
 }

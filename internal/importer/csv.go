@@ -11,7 +11,9 @@ import (
 	"github.com/samay58/cairn/internal/cards"
 )
 
-type CSVResult struct {
+// Snapshot is a complete library read from one source (an export folder or
+// the API), ready for ImportCards.
+type Snapshot struct {
 	Cards       []cards.Card
 	RowsRead    int
 	SkippedRows int
@@ -27,8 +29,8 @@ func ParseCardsCSV(path string) ([]cards.Card, []string, error) {
 	return result.Cards, result.Warnings, err
 }
 
-func ParseCardsCSVDetailed(path string) (CSVResult, error) {
-	var result CSVResult
+func ParseCardsCSVDetailed(path string) (Snapshot, error) {
+	var result Snapshot
 	f, err := os.Open(path)
 	if err != nil {
 		return result, err
@@ -120,6 +122,19 @@ var kindAliases = map[string]cards.Kind{
 	"note":                cards.KindNote,
 }
 
+// ResolveKind maps a MyMind type name ("WebPage", "XPost", ...) to a cairn
+// Kind. Unknown names fall back to article and report known=false.
+func ResolveKind(raw string) (kind cards.Kind, known bool) {
+	lower := strings.ToLower(strings.ReplaceAll(raw, " ", ""))
+	if k, err := cards.KindFromString(lower); err == nil {
+		return k, true
+	}
+	if k, ok := kindAliases[lower]; ok {
+		return k, true
+	}
+	return cards.KindArticle, false
+}
+
 func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 	id := pick(cols, row, "id", "mymind_id", "card_id")
 	kindRaw := pick(cols, row, "type", "kind")
@@ -128,17 +143,8 @@ func rowToCard(cols map[string]int, row []string) (cards.Card, bool, string) {
 		return cards.Card{}, false, "missing id/type"
 	}
 
-	kindLower := strings.ToLower(strings.ReplaceAll(kindRaw, " ", ""))
-	kind, err := cards.KindFromString(kindLower)
-	fellBackKind := false
-	if err != nil {
-		if k, ok := kindAliases[kindLower]; ok {
-			kind = k
-		} else {
-			kind = cards.KindArticle
-			fellBackKind = true
-		}
-	}
+	kind, known := ResolveKind(kindRaw)
+	fellBackKind := !known
 
 	captured := pick(cols, row, "captured_at", "created_at", "created", "date")
 	capturedAt, err := time.Parse(time.RFC3339, captured)

@@ -41,11 +41,24 @@ type cardSnapshot struct {
 // present in db but absent from the new export get tombstoned. Tombstones
 // older than 30 days are hard-deleted at the end of each import.
 func Import(db *sql.DB, exportDir string) (Result, error) {
-	var r Result
 	if _, err := os.Stat(exportDir); err != nil {
-		return r, fmt.Errorf("read export dir: %w", err)
+		return Result{}, fmt.Errorf("read export dir: %w", err)
 	}
+	parsed, err := ParseCardsCSVDetailed(filepath.Join(exportDir, "cards.csv"))
+	if err != nil {
+		// Record the failure the same way a failed ingest is recorded.
+		return ImportCards(db, exportDir, Snapshot{}, exportDir, err)
+	}
+	return ImportCards(db, exportDir, parsed, exportDir, nil)
+}
 
+// ImportCards upserts a complete library snapshot into db inside one
+// transaction: insert or update every card, tombstone cards that left the
+// library, and index attachments found under mediaDir (files named by MyMind
+// id). sourceLabel is recorded in sync_log. A non-nil parseErr records a
+// failed run without touching cards.
+func ImportCards(db *sql.DB, sourceLabel string, parsedResult Snapshot, mediaDir string, parseErr error) (Result, error) {
+	var r Result
 	start := time.Now().UTC()
 	if _, err := db.Exec(`UPDATE sync_log
 		SET finished_at = ?, status = 'interrupted'
@@ -53,16 +66,15 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 		return r, err
 	}
 	syncRes, err := db.Exec(`INSERT INTO sync_log(started_at, status, source_path) VALUES (?, 'running', ?)`,
-		start.Format(time.RFC3339), exportDir)
+		start.Format(time.RFC3339), sourceLabel)
 	if err != nil {
 		return r, err
 	}
 	syncID, _ := syncRes.LastInsertId()
 
-	parsedResult, err := ParseCardsCSVDetailed(filepath.Join(exportDir, "cards.csv"))
-	if err != nil {
-		markSyncFailed(db, syncID, err)
-		return r, err
+	if parseErr != nil {
+		markSyncFailed(db, syncID, parseErr)
+		return r, parseErr
 	}
 	parsed := parsedResult.Cards
 	r.RowsRead = parsedResult.RowsRead
@@ -78,11 +90,18 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 	seen := make(map[string]struct{}, len(parsed))
 	for _, c := range parsed {
 		if _, ok := seen[c.MyMindID]; ok {
-			err := fmt.Errorf("duplicate mymind id %q in cards.csv", c.MyMindID)
+			err := fmt.Errorf("duplicate mymind id %q in %s", c.MyMindID, sourceLabel)
 			markSyncFailed(db, syncID, err)
 			return r, err
 		}
 		seen[c.MyMindID] = struct{}{}
+	}
+	// A truncated export or a short API page would otherwise tombstone most of
+	// the library. Refuse when the snapshot lost more than half of it.
+	if live := len(active); live >= 20 && len(parsed) < live/2 {
+		err := fmt.Errorf("snapshot has %d cards but the library has %d; refusing to tombstone the difference", len(parsed), live)
+		markSyncFailed(db, syncID, err)
+		return r, err
 	}
 
 	tx, err := db.Begin()
@@ -137,9 +156,9 @@ func Import(db *sql.DB, exportDir string) (Result, error) {
 
 	// Media scan inside the same transaction.
 	// Honor the old media/ subfolder layout if present; otherwise walk the root.
-	mediaRoot := filepath.Join(exportDir, "media")
+	mediaRoot := filepath.Join(mediaDir, "media")
 	if _, err := os.Stat(mediaRoot); os.IsNotExist(err) {
-		mediaRoot = exportDir
+		mediaRoot = mediaDir
 	}
 	items, scanErr := ScanMedia(mediaRoot)
 	if scanErr != nil {
