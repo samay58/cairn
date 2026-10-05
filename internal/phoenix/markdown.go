@@ -64,4 +64,3 @@ func encodeTags(tags []string) string {
 	}
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
-

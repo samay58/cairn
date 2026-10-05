@@ -70,6 +70,14 @@ func ExcerptText(card cards.Card) string {
 		return "Saved image from " + card.Source + "."
 	case card.Kind == cards.KindImage:
 		return "Saved image."
+	case len(card.Tags) > 0:
+		// Exports since April 2026 carry no article text, so MyMind's tags are
+		// the best description of what the card holds.
+		tags := card.Tags
+		if len(tags) > 8 {
+			tags = tags[:8]
+		}
+		return "Tagged " + strings.Join(tags, ", ") + "."
 	default:
 		return "No excerpt available."
 	}

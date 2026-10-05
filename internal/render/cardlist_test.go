@@ -34,3 +34,14 @@ func TestCardListBasic(t *testing.T) {
 	got := CardList(items)
 	golden.Assert(t, "cardlist_basic.txt", got)
 }
+
+func TestExcerptTextFallsBackToTags(t *testing.T) {
+	tags := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
+	got := ExcerptText(cards.Card{Kind: cards.KindArticle, Tags: tags})
+	if got != "Tagged a, b, c, d, e, f, g, h." {
+		t.Errorf("ExcerptText = %q; want the first eight tags", got)
+	}
+	if got := ExcerptText(cards.Card{Kind: cards.KindArticle}); got != "No excerpt available." {
+		t.Errorf("ExcerptText with no tags = %q", got)
+	}
+}
